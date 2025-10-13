@@ -5,7 +5,8 @@ import {
   getRecipeById,
   updateRecipe,
   deleteRecipe,
-  searchRecipes
+  searchRecipes,
+  getRecommendedRecipe,
 } from "../controllers/recipe.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
 
@@ -23,6 +24,7 @@ router.put("/re/update/:id",protect, updateRecipe);
 router.delete("/re/delete/:id",protect, deleteRecipe);
 // Add this before getAllRecipes
 router.get("/search",protect, searchRecipes);
+router.get("/recommend",protect, getRecommendedRecipe);
 
 
 export default router;
