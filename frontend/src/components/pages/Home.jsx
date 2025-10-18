@@ -1,8 +1,10 @@
 import React from "react";
-import recipe from "../../assets/recipe.jpg";
+import recipeImg from "../../assets/recipe.jpg";
+import useRecipe from "../../hooks/useRecipe";
 
 const Home = () => {
   const items = ["veg", "Egg", "Potato", "Tomato"];
+  const {recipe} = useRecipe()
   return (
     <div className="flex flex-col px-10">
       <div className="flex flex-row justify-between">
@@ -27,7 +29,7 @@ const Home = () => {
         <div className="w-96 border p-3 flex flex-col gap-2 rounded-2xl">
           <h2 className="text-3xl font-semibold">Recipe Title</h2>
           <div className="flex flex-row gap-5">
-            <img className="w-30 h-30 rounded-2xl" src={recipe} alt="img" />
+            <img className="w-30 h-30 rounded-2xl" src={recipeImg} alt="img" />
             <div className="flex flex-wrap gap-2">
               {items.map((item) => (
                 <div key={item} className=" p-1 px-2 h-8 text-sm bg-[#b7b2b2] rounded-full">

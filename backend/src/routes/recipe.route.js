@@ -28,7 +28,7 @@ router.put("/re/update/:id", protect, updateRecipe);
 router.delete("/re/delete/:id", protect, deleteRecipe);
 // Add this before getAllRecipes
 router.get("/search", protect, searchRecipes);
-router.get("/recommend", protect, getRecommendedRecipe);
+router.get("/recommend", getRecommendedRecipe);
 
 // AiRecipe generator
 router.post("/generate-previews", protect, generateRecipePreviews); // body: { ingredients: [...], count: 3 }
