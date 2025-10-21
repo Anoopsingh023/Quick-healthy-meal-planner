@@ -1,13 +1,14 @@
 import React from "react";
 import { useLocation, Link } from "react-router-dom";
 import logo from "../../assets/logo.jpg";
+import {House } from "lucide-react"
 
-const Sidebar = ({ isCollapsed,onToggleSidebar }) => {
+const Sidebar = ({ isCollapsed, onToggleSidebar }) => {
   const location = useLocation();
   const username = localStorage.getItem("username") || "You";
 
   const navLinks = [
-    { to: "/dashboard/home", icon: "fa-house", label: "Home" },
+    { to: "/dashboard", icon: "fa-house", label: "Home" },
     { to: "/dashboard/short-page", icon: "fa-bolt", label: "Recipe" },
     { to: "/dashboard/subscription", icon: "fa-tv", label: "Shopping List" },
     { to: "/dashboard/about", icon: "fa-circle-info", label: "About" },
@@ -19,17 +20,19 @@ const Sidebar = ({ isCollapsed,onToggleSidebar }) => {
         key={label}
         to={to}
         className={`${
-          location.pathname === to ? "bg-[#3b3b3b]" : "hover:bg-[#3b3b3b]"
+          location.pathname === to ? "bg-[#08527d]" : "hover:bg-[#08527d]"
         } flex items-center gap-3 py-3 px-4 rounded-xl transition-colors`}
       >
-        <i className={`fa-solid ${icon} ${isCollapsed ? "mx-auto text-xl" : ""}`} />
+        <i
+          className={`fa-solid ${icon} ${isCollapsed ? "mx-auto text-xl" : ""}`}
+        />
         {!isCollapsed && <span className="whitespace-nowrap">{label}</span>}
       </Link>
     ));
 
   return (
     <div
-    onClick={onToggleSidebar}
+      onClick={onToggleSidebar}
       className={`flex flex-col h-full text-[#e3dede] transition-all duration-300`}
     >
       {/* Top area: logo and name */}
@@ -37,7 +40,7 @@ const Sidebar = ({ isCollapsed,onToggleSidebar }) => {
         className={`flex items-center gap-3 px-4 py-4 border-b border-[#08324a]`}
       >
         {/* Logo always visible */}
-        <Link to="/dashboard/home" className="flex items-center">
+        <Link to="/dashboard" className="flex items-center">
           <img
             src={logo}
             alt="logo"
@@ -54,18 +57,23 @@ const Sidebar = ({ isCollapsed,onToggleSidebar }) => {
             <p className="text-sm text-[#bfcbd6]">Hi, {username}</p>
           </div>
         )}
-        {!isCollapsed ? <span className="hidden sm:block ml-7">
-              {/* <i
+        {!isCollapsed ? (
+          <span className="hidden sm:block ml-7">
+            {/* <i
                 onClick={onToggleSidebar}
                 className="fa-solid fa-bars hover:bg-[#3b3b3b] p-3 cursor-pointer rounded-full"
               /> */}
-              <button onClick={onToggleSidebar}>X</button>
-            </span>:null}
+            <button onClick={onToggleSidebar}>X</button>
+          </span>
+        ) : null}
       </div>
 
       {/* Nav Links */}
       <div className={`px-2 pt-4 flex-1 overflow-auto space-y-1`}>
         {renderLinks(navLinks)}
+        {/* <div className="p-4 border rounded-2xl w-15 ">
+          <h4>{"<"}</h4>
+        </div> */}
       </div>
 
       {/* Footer (small profile / version) */}
@@ -78,7 +86,9 @@ const Sidebar = ({ isCollapsed,onToggleSidebar }) => {
               className="w-10 h-10 rounded-full"
             />
             <div>
-              <div className="text-sm font-medium">{localStorage.getItem("name") || username}</div>
+              <div className="text-sm font-medium">
+                {localStorage.getItem("name") || username}
+              </div>
               <div className="text-xs text-[#bfcbd6]">View profile</div>
             </div>
           </div>
