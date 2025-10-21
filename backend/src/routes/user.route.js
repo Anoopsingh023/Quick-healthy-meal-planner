@@ -11,6 +11,7 @@ import {
   updateUserPreferences,
   changePassword,
   saveRecipe,
+  getSavedRecipes,
   removeSavedRecipe,
   addToShoppingList,
   removeFromShoppingList,
@@ -38,8 +39,9 @@ router.put("/me/preferences", protect, updateUserPreferences);
 router.put("/me/password", protect, changePassword);
 
 // --------------------- RECIPE & SHOPPING LIST ---------------------
-router.post("/me/recipes", protect, saveRecipe);
-router.delete("/me/recipes", protect, removeSavedRecipe);
+router.post("/me/:recipeId", protect, saveRecipe);
+router.get("/me/saved-recipes", protect, getSavedRecipes);
+router.delete("/me/:recipeId", protect, removeSavedRecipe);
 router.post("/me/shopping-list", protect, addToShoppingList);
 router.delete("/me/shopping-list", protect, removeFromShoppingList);
 

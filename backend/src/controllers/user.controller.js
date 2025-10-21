@@ -1,13 +1,15 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
-import { User } from "../models/user.model.js";
+import { User } from "../models/user.model.js"
+import {Recipe} from "../models/recipe.model.js"
 import {
   uploadOnCloudinary,
   deleteImageFromCloudinary,
 } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+
 
 // --------------------- TOKEN GENERATION ---------------------
 const generateTokens = async (userId) => {
@@ -205,15 +207,54 @@ const changePassword = asyncHandler(async (req, res) => {
 
 // --------------------- RECIPE & SHOPPING LIST ---------------------
 const saveRecipe = asyncHandler(async (req, res) => {
-  const { recipeId } = req.body;
-  await User.findByIdAndUpdate(req.user._id, {
-    $addToSet: { savedRecipes: recipeId },
-  });
-  res.status(200).json(new apiResponse(200, {}, "Recipe saved successfully"));
+  const { recipeId } = req.params;
+
+  // Validate ObjectId
+  if (!mongoose.Types.ObjectId.isValid(recipeId)) {
+    throw new apiError(400, "Invalid recipe ID");
+  }
+
+  // Check if recipe exists
+  const recipe = await Recipe.findById(recipeId);
+  if (!recipe) {
+    throw new apiError(404, "Recipe not found");
+  }
+
+  // Add to saved recipes if not already present
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $addToSet: { savedRecipes: recipeId } },
+    { new: true }
+  ).select("savedRecipes");
+
+  res
+    .status(200)
+    .json(new apiResponse(200, user.savedRecipes, "Recipe saved successfully"));
+});
+
+const getSavedRecipes = asyncHandler(async (req, res) => {
+  // Find user and populate saved recipe details
+  const user = await User.findById(req.user._id)
+    .populate({
+      path: "savedRecipes",
+      model: "Recipe",
+      select: "title description ingredients metadata.tags metadata.cuisine metadata.cookingTime metadata.difficulty createdBy",
+    })
+    .select("savedRecipes");
+
+  if (!user) {
+    throw new apiError(404, "User not found");
+  }
+
+  const savedRecipes = user.savedRecipes || [];
+
+  res
+    .status(200)
+    .json(new apiResponse(200, savedRecipes, "Saved recipes fetched successfully"));
 });
 
 const removeSavedRecipe = asyncHandler(async (req, res) => {
-  const { recipeId } = req.body;
+  const { recipeId } = req.params;
   await User.findByIdAndUpdate(req.user._id, {
     $pull: { savedRecipes: recipeId },
   });
@@ -284,6 +325,7 @@ export {
   updateUserPreferences,
   changePassword,
   saveRecipe,
+  getSavedRecipes,
   removeSavedRecipe,
   addToShoppingList,
   removeFromShoppingList,
