@@ -17,7 +17,7 @@ function Login() {
     setLoading(true);
 
     axios
-      .post(`${base_url}/api/v1/users/login`, { email, password })
+      .post(`${base_url}/users/login`, { email, password })
       .then((res) => {
         // console.log(res.data);
         setLoading(false);
@@ -30,12 +30,12 @@ function Login() {
         localStorage.setItem("coverImage", res.data.data.user.coverImage);
         localStorage.setItem("name", res.data.data.user.fullName);
 
-        toast("Welcome to my youtube");
+        // toast("Welcome to my youtube");
       })
       .catch((error) => {
         // console.log(error.response);
         setLoading(false);
-        toast.error("Invalid email or password");
+        // toast.error("Invalid email or password");
       });
   };
 
