@@ -3,6 +3,7 @@ import Dashboard from "./components/Dashboard";
 import Login from "./components/auth/Login";
 import Signup from "./components/auth/Signup";
 import Home from "./components/pages/Home";
+import RecipeDetail from "./components/pages/RecipeDetail";
 
 const appRouter = createBrowserRouter([
   {
@@ -22,6 +23,7 @@ const appRouter = createBrowserRouter([
     element: <Dashboard />,
     children: [
       { path: "", element: <Home /> },
+      { path: ":recipeId", element: <RecipeDetail /> },
     ],
   },
 ]);
