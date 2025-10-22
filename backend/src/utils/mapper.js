@@ -1,6 +1,7 @@
 export function mapSpoonacularToRecipe(spoonacularData) {
   return {
     title: spoonacularData.title,
+    image: spoonacularData.image,
     description: spoonacularData.summary
       ? spoonacularData.summary.replace(/<[^>]*>/g, "") // remove HTML tags
       : "",
