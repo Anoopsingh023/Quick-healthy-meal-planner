@@ -30,8 +30,8 @@ const userSchema = new Schema(
       required: [true, "Password is required"],
     },
     phoneNo: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     avatar: {
       type: String,
@@ -39,8 +39,8 @@ const userSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["user","admin"],
-      default: "user"
+      enum: ["user", "admin"],
+      default: "user",
     },
     profile: {
       dietPreference: {
@@ -65,6 +65,9 @@ const userSchema = new Schema(
     gamification: {
       streak: { type: Number, default: 0 }, // daily cooking streak
       badges: [{ type: String }], // ["Budget Saver", "Zero Waste Cook"]
+      points: { type: Number, default: 0 },
+      lastCookedAt: { type: Date }, // when user last marked a cook
+      cookedCount: { type: Number, default: 0 },
     },
     savedRecipes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Recipe" }],
     shoppingList: [{ type: String }], // items to buy
@@ -112,4 +115,4 @@ userSchema.methods.generateRefreshToken = function () {
   );
 };
 
-export  const User = mongoose.model("User", userSchema);
+export const User = mongoose.model("User", userSchema);

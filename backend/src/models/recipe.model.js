@@ -5,6 +5,9 @@ const recipeSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  image: {
+    type: String,
+  },
   description: String, // short intro like "Quick 10-min healthy rice bowl"
   ingredients: [
     {

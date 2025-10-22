@@ -238,7 +238,7 @@ const getSavedRecipes = asyncHandler(async (req, res) => {
     .populate({
       path: "savedRecipes",
       model: "Recipe",
-      select: "title description ingredients metadata.tags metadata.cuisine metadata.cookingTime metadata.difficulty createdBy",
+      select: "title image description ingredients metadata.dietType metadata.cuisine metadata.cookingTime metadata.difficulty metadata.calories metadata.costEstimate createdBy",
     })
     .select("savedRecipes");
 
