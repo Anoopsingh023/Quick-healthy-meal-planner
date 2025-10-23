@@ -4,6 +4,7 @@ import Login from "./components/auth/Login";
 import Signup from "./components/auth/Signup";
 import Home from "./components/pages/Home";
 import RecipeDetail from "./components/pages/RecipeDetail";
+import ShoppingList from "./components/pages/ShoppingList";
 
 const appRouter = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ const appRouter = createBrowserRouter([
     children: [
       { path: "", element: <Home /> },
       { path: ":recipeId", element: <RecipeDetail /> },
+      { path: "shopping-bag", element: <ShoppingList /> },
     ],
   },
 ]);

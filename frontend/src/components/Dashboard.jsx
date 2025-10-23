@@ -25,8 +25,24 @@ const Dashboard = () => {
       >
         <Sidebar
           isCollapsed={isSidebarCollapsed}
-          onToggleSidebar={toggleSidebar}
         />
+        {isSidebarCollapsed ? (
+          <div
+            onClick={toggleSidebar}
+            className="pt-3 pl-3 w-10 h-12 border-l border-t border-b border-[#bfcbd6] text-[#bfcbd6] cursor-pointer rounded-l-md duration-300
+             shadow-[0_4px_12px_rgba(0,0,0,0.4),0_2px_6px_rgba(4,45,82,0.4)]
+             relative -top-85 -right-10"
+          >
+            <i class="fa-solid fa-angles-right"></i>
+          </div>
+        ) : (
+          <div
+            onClick={toggleSidebar}
+            className="pt-3 pl-3 w-10 h-12 border-l border-t border-b relative -top-85 -right-54 border-[#bfcbd6] text-[#bfcbd6] cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.4),0_2px_6px_rgba(4,45,82,0.4)] rounded-l-md duration-300"
+          >
+            <i class="fa-solid fa-angles-left"></i>
+          </div>
+        )}
       </aside>
 
       {/* Navbar (below sidebar visually) */}
@@ -45,12 +61,12 @@ const Dashboard = () => {
       <main
         className={`transition-all duration-300 overflow-y-auto`}
         style={{
-          marginLeft: isSidebarCollapsed ? 64 : 256, // same as sidebar width
+          marginLeft: isSidebarCollapsed ? 64 : 268, // same as sidebar width
           paddingTop: NAVBAR_HEIGHT,
           minHeight: "100vh",
         }}
       >
-        <div className="p-4">
+        <div className="p-4 px-11 overflow-hidden scrollbar-hover">
           <Outlet />
         </div>
       </main>
