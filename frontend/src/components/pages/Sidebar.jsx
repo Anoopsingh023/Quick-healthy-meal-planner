@@ -1,9 +1,8 @@
 import React from "react";
 import { useLocation, Link } from "react-router-dom";
 import logo from "../../assets/logo.jpg";
-import {House } from "lucide-react"
 
-const Sidebar = ({ isCollapsed, onToggleSidebar }) => {
+const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
   const username = localStorage.getItem("username") || "You";
 
@@ -21,7 +20,7 @@ const Sidebar = ({ isCollapsed, onToggleSidebar }) => {
         to={to}
         className={`${
           location.pathname === to ? "bg-[#08527d]" : "hover:bg-[#08527d]"
-        } flex items-center gap-3 py-3 px-4 rounded-xl transition-colors`}
+        } flex items-center gap-3 py-3 px-4 rounded-xl transition-colors duration-300`}
       >
         <i
           className={`fa-solid ${icon} ${isCollapsed ? "mx-auto text-xl" : ""}`}
@@ -32,7 +31,6 @@ const Sidebar = ({ isCollapsed, onToggleSidebar }) => {
 
   return (
     <div
-      onClick={onToggleSidebar}
       className={`flex flex-col h-full text-[#e3dede] transition-all duration-300`}
     >
       {/* Top area: logo and name */}
@@ -57,15 +55,7 @@ const Sidebar = ({ isCollapsed, onToggleSidebar }) => {
             <p className="text-sm text-[#bfcbd6]">Hi, {username}</p>
           </div>
         )}
-        {!isCollapsed ? (
-          <span className="hidden sm:block ml-7">
-            {/* <i
-                onClick={onToggleSidebar}
-                className="fa-solid fa-bars hover:bg-[#3b3b3b] p-3 cursor-pointer rounded-full"
-              /> */}
-            <button onClick={onToggleSidebar}>X</button>
-          </span>
-        ) : null}
+        
       </div>
 
       {/* Nav Links */}
