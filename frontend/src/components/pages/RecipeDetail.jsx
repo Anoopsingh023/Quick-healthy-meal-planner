@@ -4,6 +4,8 @@ import { useParams } from "react-router-dom";
 import recipeImg from "../../assets/recipe.jpg";
 import calories from "../../assets/Calories.png";
 import { Timer } from "lucide-react";
+import Ingredients from "../../shared/Ingredients";
+import { Tag, TimeTag, PriceTag, CalorieTag } from "../../shared/Tag";
 
 const RecipeDetail = () => {
   const { recipeId } = useParams();
@@ -34,53 +36,23 @@ const RecipeDetail = () => {
             </div>
           </div>
           <div className="flex-1 flex gap-2 flex-col ">
-            <img className="h-40 rounded-2xl" src={recipeImg} alt="" />
+            <img className="h-50 rounded-2xl" src={recipeById?.data.image} alt="" />
             <div className="flex flex-wrap gap-2">
-              <p className=" p-1 px-2 h-8 text-sm bg-[#b7b2b2] rounded-full flex flex-row">
-                <Timer size={20} />
-                {recipeById?.data?.metadata.cookingTime} min
-              </p>
-              <p className=" p-1 px-2 h-8 text-sm bg-[#b7b2b2] rounded-full flex flex-row">
-                <img className="h-5 w-5" src={calories} alt="" />
-                {Math.trunc(recipeById?.data?.metadata.calories)} kcal
-              </p>
-              <p className=" p-1 px-2 h-8 text-sm bg-[#b7b2b2] rounded-full flex flex-row items-center">
-                Rs. {recipeById?.data?.metadata.costEstimate}
-              </p>
-              <span>
-                {recipeById?.data?.metadata.dietType == "Any" ? null : (
-                  <p className=" p-1 px-2 h-8 text-sm bg-[#b7b2b2] rounded-full">
-                    {recipeById?.data.metadata.dietType}
-                  </p>
-                )}
-              </span>
-              <span>
-                {recipeById?.data?.metadata.cuisine == "Any" ? null : (
-                  <p className=" p-1 px-2 h-8 text-sm bg-[#b7b2b2] rounded-full">
-                    {recipeById?.data.metadata.cuisine}
-                  </p>
-                )}
-              </span>
-              <span>
-                {recipeById?.data?.metadata.difficulty == "Any" ? null : (
-                  <p className=" p-1 px-2 h-8 text-sm bg-[#b7b2b2] rounded-full">
-                    {recipeById?.data.metadata.difficulty}
-                  </p>
-                )}
-              </span>
+              <TimeTag metadata={recipeById?.data?.metadata.cookingTime} />
+              <CalorieTag
+                metadata={Math.trunc(recipeById?.data?.metadata.calories)}
+              />
+              <PriceTag metadata={recipeById?.data?.metadata.costEstimate} />
+              <Tag metadata={recipeById?.data.metadata.dietType} />
+              <Tag metadata={recipeById?.data.metadata.cuisine} />
+              <Tag metadata={recipeById?.data.metadata.difficulty} />
             </div>
 
             <div className="border p-4 rounded-2xl">
-              <h4 className="text-2xl font-semibold ">Ingredients</h4>
+              <h4 className="text-2xl font-semibold mb-2 ">Ingredients</h4>
               <div className="flex flex-col gap-1">
                 {recipeById?.data.ingredients.map((ingredient) => (
-                  <div
-                    key={ingredient._id}
-                    className="flex flex-row gap-4 justify-between "
-                  >
-                    <p>{ingredient.name}</p>
-                    <span>{ingredient.quantity}</span>
-                  </div>
+                  <Ingredients {...ingredient} />
                 ))}
               </div>
             </div>
@@ -89,9 +61,7 @@ const RecipeDetail = () => {
               <div className="flex flex-wrap gap-2">
                 {recipeById?.data.tags.map((tag, index) => (
                   <div key={index} className="flex flex-row gap-4">
-                    <p className="p-1 px-2 h-8 text-sm bg-[#b7b2b2] rounded-full">
-                      {tag}
-                    </p>
+                    <Tag metadata={tag} />
                   </div>
                 ))}
               </div>
