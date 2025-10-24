@@ -2,173 +2,116 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Ingredients from "../../shared/Ingredients";
+import { base_url } from "../../utils/constant";
+import ShoppingItem from "../../shared/ShoppingItem";
+import axios from "axios";
 
-/**
- * Props / Behavior:
- * - Reads initial items from location.state.items (if provided)
- * - If no items provided, tries to fetch from /api/shopping-list (change endpoint as needed)
- * - Exposes UI to add / edit / remove items
- * - Calls placeholder async functions (addItemApi, updateItemApi, removeItemApi).
- *   Replace them with your real API integration.
- */
-const API_URL = `${
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
-}/api/shopping-list`;
+const API_URL = `${base_url}/shopinglists`;
 
-const authHeaders = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${localStorage.getItem("token")}`,
-});
+const fetchListFromServer = async (signal) => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw { code: "NO_TOKEN", message: "No auth token in localStorage" };
+  }
 
-const placeholderFetchList = async () => {
-  // replace with real API call
+  const res = await axios.get(`${API_URL}/`, {
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    signal, // abort support
+  });
+  console.log("shopping list",res.data)
 
-  return { ok: true, json: async () => ({ items: [] }) };
+  return res.data; // expected { success: true, items: [...] }
 };
 
 const addItemApi = async (item) => {
-  // Replace with real POST /api/shopping-list call
-  // Return created item (with _id) from server
-  //   return { ok: true, json: async () => ({ ...item, _id: Date.now().toString() }) };
-  const res = await fetch(`${API_URL}/add`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(item),
+  // send only necessary fields to backend
+  const payload = {
+    name: item.name,
+    quantity: item.quantity,
+    category: item.category || "",
+    isPurchased: !!item.isPurchased,
+    addedFromRecipe: item.addedFromRecipe || null,
+  };
+
+  const res = await axios.post(`${API_URL}/add`, payload, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token"),
+      "Content-Type": "application/json",
+    },
   });
-  return res.json();
+  console.log("Add item in shopping list", res.data);
+
+  // axios returns parsed data on res.data
+  return res.data.data;
 };
 
 const updateItemApi = async (itemId, patch) => {
-  // Replace with PATCH /api/shopping-list/:id
-  return { ok: true, json: async () => ({ success: true }) };
+  try {
+    const res = await axios.patch(
+      `${API_URL}/update/${itemId}`,
+      patch, // <-- send the patch object as the request body
+      {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token"),
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    // res.data is parsed JSON from axios
+    console.log("update item response:", res.data);
+    return res.data;
+  } catch (err) {
+    console.error(
+      "updateItemApi error:",
+      err?.response?.data || err.message || err
+    );
+    throw err; // let caller handle revert
+  }
+};
+
+const togglePurchaseApi = async (itemId, patch) => {
+  try {
+    const res = await axios.patch(
+      `${API_URL}/toggle/${itemId}`,
+      patch, // <-- send the patch object as the request body
+      {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token"),
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    // res.data is parsed JSON from axios
+    console.log("update item response:", res.data);
+    return res.data;
+  } catch (err) {
+    console.error(
+      "updateItemApi error:",
+      err?.response?.data || err.message || err
+    );
+    throw err; // let caller handle revert
+  }
 };
 
 const removeItemApi = async (itemId) => {
-  // Replace with DELETE /api/shopping-list/:id
-  return { ok: true, json: async () => ({ success: true }) };
+  const res = await axios.delete(`${API_URL}/remove/${itemId}`, {
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token"),
+      "Content-Type": "application/json",
+    },
+  });
+  console.log("remove item from shopping list", res.data);
+
+  // axios returns parsed data on res.data
+  return res.data;
 };
 
 const Heading = ({ children }) => (
   <h2 className="text-2xl font-semibold mb-3">{children}</h2>
 );
-
-const ShoppingItem = ({
-  item,
-  onTogglePurchased,
-  onRemove,
-  onUpdateQuantity,
-  onUpdateCategory,
-}) => {
-  const [editingQty, setEditingQty] = useState(false);
-  const [qtyValue, setQtyValue] = useState(item.quantity || "");
-
-  useEffect(() => setQtyValue(item.quantity || ""), [item.quantity]);
-
-  return (
-    <div
-      className={`flex items-start gap-4 p-3 rounded-lg border ${
-        item.isPurchased ? "bg-green-50/40 border-green-300" : "bg-white"
-      }`}
-    >
-      <div className="flex-shrink-0">
-        <input
-          type="checkbox"
-          checked={!!item.isPurchased}
-          onChange={() => onTogglePurchased(item)}
-          aria-label={`Mark ${item.name} as purchased`}
-          className="w-5 h-5 cursor-pointer"
-        />
-      </div>
-
-      <div className="flex-1">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-start gap-3">
-            {/* Use shared Ingredients component when available; otherwise fallback */}
-            {typeof Ingredients === "function" ? (
-              <div className="min-w-[160px]">
-                <Ingredients {...item} hideControls />
-              </div>
-            ) : (
-              <div>
-                <div className="font-medium">{item.name}</div>
-                <div className="text-sm text-gray-500">{item.category}</div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Quantity editing */}
-            {editingQty ? (
-              <>
-                <input
-                  type="text"
-                  value={qtyValue}
-                  onChange={(e) => setQtyValue(e.target.value)}
-                  className="w-28 px-2 py-1 border rounded"
-                />
-                <button
-                  onClick={() => {
-                    onUpdateQuantity(item, qtyValue);
-                    setEditingQty(false);
-                  }}
-                  className="px-3 py-1 rounded bg-blue-600 text-white text-sm"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => {
-                    setQtyValue(item.quantity || "");
-                    setEditingQty(false);
-                  }}
-                  className="px-2 py-1 rounded bg-gray-200 text-sm"
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="text-sm text-gray-700 mr-2">
-                  {item.quantity || "—"}
-                </div>
-                <button
-                  onClick={() => setEditingQty(true)}
-                  className="px-2 py-1 rounded border text-sm"
-                >
-                  Edit
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Category selector */}
-        <div className="mt-2 flex items-center gap-3">
-          <select
-            value={item.category || ""}
-            onChange={(e) => onUpdateCategory(item, e.target.value)}
-            className="px-2 py-1 border rounded text-sm"
-          >
-            <option value="">Uncategorized</option>
-            <option value="Vegetable">Vegetable</option>
-            <option value="Fruit">Fruit</option>
-            <option value="Dairy">Dairy</option>
-            <option value="Spices">Spices</option>
-            <option value="Bakery">Bakery</option>
-            <option value="Other">Other</option>
-          </select>
-
-          <button
-            onClick={() => onRemove(item)}
-            className="ml-auto px-2 py-1 text-sm rounded bg-red-50 border border-red-200 text-red-600"
-            aria-label={`Remove ${item.name}`}
-          >
-            Remove
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const ShoppingList = () => {
   const { state } = useLocation();
@@ -183,62 +126,106 @@ const ShoppingList = () => {
   });
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (initialItems) {
-        setLoading(false);
-        return;
-      }
+useEffect(() => {
+  let mounted = true;
+  const controller = new AbortController();
+  const signal = controller.signal;
+
+  (async () => {
+    if (initialItems && Array.isArray(initialItems)) {
+      setItems(initialItems);
+    }
+
+    const MAX_RETRIES = 2;
+    let attempt = 0;
+
+    while (mounted && attempt <= MAX_RETRIES) {
       try {
         setLoading(true);
-        const res = await placeholderFetchList();
+        const data = await fetchListFromServer(signal);
+
         if (!mounted) return;
-        if (res.ok) {
-          const payload = await res.json();
-          setItems(payload.items || []);
+
+        if (data?.success) {
+          setItems(data.data.items || []);
         } else {
-          alert("Failed to load shopping list");
+          console.warn("Unexpected shopping list response:", data);
+          setItems(data.items || []);
         }
+        break;
       } catch (err) {
-        console.error(err);
-        alert("Error loading shopping list");
+        if (axios.isCancel && axios.isCancel(err)) {
+          console.log("Shopping list fetch aborted");
+          break;
+        }
+
+        if (err && err.code === "NO_TOKEN" && attempt < MAX_RETRIES) {
+          attempt++;
+          console.warn("No token yet, retrying fetch... attempt:", attempt);
+          await new Promise((r) => setTimeout(r, 200));
+          continue;
+        }
+
+        if (err?.response?.status === 401) {
+          console.warn("Unauthorized when fetching shopping list (401)");
+        } else {
+          console.error("Error fetching shopping list:", err?.response?.data ?? err.message ?? err);
+        }
+        break;
       } finally {
         if (mounted) setLoading(false);
       }
-    })();
-    return () => (mounted = false);
-  }, [initialItems]);
+    }
+  })();
 
-  // Optimistic add
+  return () => {
+    mounted = false;
+    controller.abort?.();
+  };
+}, [initialItems]);
+
   const handleAddItem = async (e) => {
     e.preventDefault();
-    if (!newItem.name.trim()) {
+    if (!newItem.name || !newItem.name.trim()) {
       alert("Enter item name");
       return;
     }
 
     setAdding(true);
+
     // optimistic local item (temporary id)
-    // const temp = {
-    //   ...newItem,
-    //   _id: `temp-${Date.now()}`,
-    //   isPurchased: false,
-    //   addedFromRecipe: null,
-    // };
-    // setItems((s) => [temp, ...s]);
-    // setNewItem({ name: "", quantity: "", category: "" });
+    const temp = {
+      name: newItem.name,
+      quantity: newItem.quantity || "",
+      category: newItem.category || "",
+      _id: `temp-${Date.now()}`,
+      isPurchased: false,
+      addedFromRecipe: null,
+    };
+
+    // add locally immediately
+    setItems((s) => [temp, ...s]);
+    setNewItem({ name: "", quantity: "", category: "" });
 
     try {
-      const res = await addItemApi(temp);
-      if (!res.ok) throw new Error("Failed to add");
-      const saved = await res.json();
-      // replace temp with saved from server
-      setItems((s) => s.map((it) => (it._id === saved._id ? saved : it)));
+      // call real API
+      const data = await addItemApi(temp);
+      // Expect server to return created item (with _id)
+      // Adjust checks to match your API response shape
+      const saved = data?.list || data?.data || data; // support common patterns
+
+      if (!saved || !saved._id) {
+        // backend didn't return created item; throw so we revert
+        console.error("Unexpected add response:", data);
+        throw new Error("Invalid response from server");
+      }
+
+      // Replace temp item with saved item from server
+      setItems((s) => s.map((it) => (it._id === temp._id ? saved : it)));
     } catch (err) {
-      // revert optimistic
+      // revert optimistic update
       setItems((s) => s.filter((it) => it._id !== temp._id));
-      console.error(err);
+      console.error("Add item failed:", err);
       alert("Failed to add item. Try again.");
     } finally {
       setAdding(false);
@@ -250,13 +237,23 @@ const ShoppingList = () => {
     if (!yes) return;
 
     // optimistic remove
-    const backup = items;
+    const backup = Array.isArray(items) ? [...items] : [];
     setItems((s) => s.filter((it) => it._id !== item._id));
 
     try {
-      const res = await removeItemApi(item._id);
-      if (!res.ok) throw new Error("Failed to remove");
-      // success — do nothing (already removed)
+      const data = await removeItemApi(item._id);
+      if (data && data.success && Array.isArray(data.items)) {
+        setItems(data.items);
+        return;
+      }
+
+      // If backend responded but without items, check success flag
+      if (data && data.success) {
+        // nothing else to do (already removed optimistically)
+        return;
+      }
+      console.error("Remove failed response:", data);
+      throw new Error("Failed to remove item on server");
     } catch (err) {
       console.error(err);
       alert("Failed to remove item. Restoring.");
@@ -265,7 +262,8 @@ const ShoppingList = () => {
   };
 
   const handleUpdateQuantity = async (item, newQuantity) => {
-    const backup = items;
+    const backup = Array.isArray(items) ? [...items] : [];
+
     setItems((s) =>
       s.map((it) =>
         it._id === item._id ? { ...it, quantity: newQuantity } : it
@@ -273,17 +271,29 @@ const ShoppingList = () => {
     );
 
     try {
-      const res = await updateItemApi(item._id, { quantity: newQuantity });
-      if (!res.ok) throw new Error("Failed to update");
+      const data = await updateItemApi(item._id, { quantity: newQuantity });
+
+      if (!data || data.success !== true) {
+        console.error("Unexpected update response:", data);
+        throw new Error("Failed to update on server");
+      }
+
+      if (Array.isArray(data.items)) {
+        setItems(data.items);
+      } else if (data.item) {
+        setItems((s) =>
+          s.map((it) => (it._id === data.item._id ? data.item : it))
+        );
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to update quantity:", err);
       alert("Failed to update quantity. Reverting.");
       setItems(backup);
     }
   };
 
   const handleTogglePurchased = async (item) => {
-    const backup = items;
+    const backup = Array.isArray(items) ? [...items] : [];
     setItems((s) =>
       s.map((it) =>
         it._id === item._id ? { ...it, isPurchased: !it.isPurchased } : it
@@ -291,10 +301,18 @@ const ShoppingList = () => {
     );
 
     try {
-      const res = await updateItemApi(item._id, {
+      const data = await togglePurchaseApi(item._id, {
         isPurchased: !item.isPurchased,
       });
-      if (!res.ok) throw new Error("Failed to update");
+      if (!data || data.success !== true) throw new Error("Failed to update");
+
+      if (Array.isArray(data.items)) {
+        setItems(data.items);
+      } else if (data.item) {
+        setItems((s) =>
+          s.map((it) => (it._id === data.item._id ? data.item : it))
+        );
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to update. Reverting.");
@@ -303,14 +321,26 @@ const ShoppingList = () => {
   };
 
   const handleUpdateCategory = async (item, category) => {
-    const backup = items;
+    const backup = Array.isArray(items) ? [...items] : [];
     setItems((s) =>
       s.map((it) => (it._id === item._id ? { ...it, category } : it))
     );
 
     try {
-      const res = await updateItemApi(item._id, { category });
-      if (!res.ok) throw new Error("Failed to update");
+      const data = await updateItemApi(item._id, { category });
+
+      if (!data || data.success !== true) {
+        console.error("Unexpected update response:", data);
+        throw new Error("Failed to update on server");
+      }
+
+      if (Array.isArray(data.items)) {
+        setItems(data.items);
+      } else if (data.item) {
+        setItems((s) =>
+          s.map((it) => (it._id === data.item._id ? data.item : it))
+        );
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to update category. Reverting.");
