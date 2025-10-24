@@ -2,7 +2,6 @@ import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
 import bodyParser from "body-parser"
-import axios from "axios"
 
 const app = express()
 
@@ -21,10 +20,12 @@ app.use(cookieParser())
 import userRouter from "./routes/user.route.js"
 import recipeRouter from "./routes/recipe.route.js"
 import shopinglistRouter from "./routes/shopinglist.route.js"
+import gamificationRouter from "./routes/gamification.route.js"
 
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/recipes", recipeRouter)
 app.use("/api/v1/shopinglists", shopinglistRouter)
+app.use("/api/v1/gamifications", gamificationRouter)
 
 
 
