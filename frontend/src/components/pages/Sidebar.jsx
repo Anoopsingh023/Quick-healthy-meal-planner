@@ -9,7 +9,7 @@ const Sidebar = ({ isCollapsed }) => {
   const navLinks = [
     { to: "/dashboard", icon: "fa-house", label: "Home" },
     { to: "/dashboard/short-page", icon: "fa-bolt", label: "Recipe" },
-    { to: "/dashboard/subscription", icon: "fa-tv", label: "Shopping List" },
+    { to: "/dashboard/shopping-bag", icon: "fa-tv", label: "Shopping List" },
     { to: "/dashboard/about", icon: "fa-circle-info", label: "About" },
   ];
 
@@ -61,9 +61,6 @@ const Sidebar = ({ isCollapsed }) => {
       {/* Nav Links */}
       <div className={`px-2 pt-4 flex-1 overflow-auto space-y-1`}>
         {renderLinks(navLinks)}
-        {/* <div className="p-4 border rounded-2xl w-15 ">
-          <h4>{"<"}</h4>
-        </div> */}
       </div>
 
       {/* Footer (small profile / version) */}
