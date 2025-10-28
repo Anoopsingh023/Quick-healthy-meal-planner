@@ -5,6 +5,8 @@ import Signup from "./components/auth/Signup";
 import Home from "./components/pages/Home";
 import RecipeDetail from "./components/pages/RecipeDetail";
 import ShoppingList from "./components/pages/ShoppingList";
+import SearchResults from "./components/pages/SearchResults";
+import SavedRecipe from "./components/pages/SavedRecipe";
 
 const appRouter = createBrowserRouter([
   {
@@ -26,6 +28,8 @@ const appRouter = createBrowserRouter([
       { path: "", element: <Home /> },
       { path: ":recipeId", element: <RecipeDetail /> },
       { path: "shopping-bag", element: <ShoppingList /> },
+      { path: "search", element: <SearchResults /> },
+      { path: "saved-recipe", element: <SavedRecipe /> },
     ],
   },
 ]);

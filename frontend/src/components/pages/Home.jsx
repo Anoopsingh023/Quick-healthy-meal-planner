@@ -10,6 +10,7 @@ import { Tag, TimeTag, PriceTag, CalorieTag } from "../../shared/Tag";
 import RecipeCard from "../../shared/RecipeCard";
 import useShoppingList from "../../hooks/useShoppingList";
 import Ingredients from "../../shared/Ingredients";
+import Search from "../../shared/Search";
 
 
 const PrevArrow = ({ className, style, onClick }) => (
@@ -91,14 +92,7 @@ const Home = () => {
             Cook Smart,
             <br /> Eat Healthy.
           </h1>
-
-          <div className="mt-5 max-w-xl">
-            <input
-              className="w-full px-4 py-3 rounded-full border  focus:outline-none focus:ring-2 focus:ring-green-400"
-              type="text"
-              placeholder="Search recipes, ingredients or cuisines"
-            />
-          </div>
+          <Search/>
 
           <div className="flex flex-wrap gap-3 mt-4">
             {items.map((item) => (
