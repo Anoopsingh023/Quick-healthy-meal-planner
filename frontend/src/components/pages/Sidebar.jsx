@@ -8,7 +8,7 @@ const Sidebar = ({ isCollapsed }) => {
 
   const navLinks = [
     { to: "/dashboard", icon: "fa-house", label: "Home" },
-    { to: "/dashboard/short-page", icon: "fa-bolt", label: "Recipe" },
+    { to: "/dashboard/saved-recipe", icon: "fa-bolt", label: "Recipe" },
     { to: "/dashboard/shopping-bag", icon: "fa-tv", label: "Shopping List" },
     { to: "/dashboard/about", icon: "fa-circle-info", label: "About" },
   ];
