@@ -10,7 +10,8 @@ import {
   updateUserProfile,
   updateUserPreferences,
   changePassword,
-  saveRecipe,
+  toggleSaveRecipe,
+  checkRecipeSaved,
   getSavedRecipes,
   removeSavedRecipe,
   addToShoppingList,
@@ -39,7 +40,8 @@ router.put("/me/preferences", protect, updateUserPreferences);
 router.put("/me/password", protect, changePassword);
 
 // --------------------- RECIPE & SHOPPING LIST ---------------------
-router.post("/me/:recipeId", protect, saveRecipe);
+router.post("/me/toggle-save/:recipeId", protect, toggleSaveRecipe);
+router.get("/is-saved/:recipeId", protect, checkRecipeSaved);
 router.get("/me/saved-recipes", protect, getSavedRecipes);
 router.delete("/me/:recipeId", protect, removeSavedRecipe);
 router.post("/me/shopping-list", protect, addToShoppingList);

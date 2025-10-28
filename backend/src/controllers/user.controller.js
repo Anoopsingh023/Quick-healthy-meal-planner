@@ -206,7 +206,61 @@ const changePassword = asyncHandler(async (req, res) => {
 });
 
 // --------------------- RECIPE & SHOPPING LIST ---------------------
-const saveRecipe = asyncHandler(async (req, res) => {
+const toggleSaveRecipe = asyncHandler(async (req, res) => {
+  const { recipeId } = req.params;
+
+  // Validate recipeId
+  if (!mongoose.Types.ObjectId.isValid(recipeId)) {
+    throw new apiError(400, "Invalid recipe ID");
+  }
+
+  // Ensure recipe exists
+  const recipe = await Recipe.findById(recipeId).select("_id");
+  if (!recipe) {
+    throw new apiError(404, "Recipe not found");
+  }
+
+  // Fetch user's savedRecipes
+  const user = await User.findById(req.user._id).select("savedRecipes");
+  if (!user) {
+    throw new apiError(404, "User not found");
+  }
+
+  const alreadySaved = user.savedRecipes.some(
+    (id) => id.toString() === recipeId.toString()
+  );
+
+  let updatedUser;
+  let isSaved;
+
+  if (alreadySaved) {
+    // remove
+    updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { $pull: { savedRecipes: recipeId } },
+      { new: true }
+    ).select("savedRecipes");
+    isSaved = false;
+  } else {
+    // add (use $addToSet to avoid duplicates)
+    updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { $addToSet: { savedRecipes: recipeId } },
+      { new: true }
+    ).select("savedRecipes");
+    isSaved = true;
+  }
+
+  return res.status(200).json(
+    new apiResponse(
+      200,
+      { isSaved, savedRecipes: updatedUser.savedRecipes },
+      alreadySaved ? "Recipe removed from saved list" : "Recipe saved successfully"
+    )
+  );
+});
+
+const checkRecipeSaved = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
 
   // Validate ObjectId
@@ -214,22 +268,20 @@ const saveRecipe = asyncHandler(async (req, res) => {
     throw new apiError(400, "Invalid recipe ID");
   }
 
-  // Check if recipe exists
-  const recipe = await Recipe.findById(recipeId);
-  if (!recipe) {
-    throw new apiError(404, "Recipe not found");
+  // Find user and check if recipeId exists in savedRecipes
+  const user = await User.findById(req.user._id).select("savedRecipes");
+
+  if (!user) {
+    throw new apiError(404, "User not found");
   }
 
-  // Add to saved recipes if not already present
-  const user = await User.findByIdAndUpdate(
-    req.user._id,
-    { $addToSet: { savedRecipes: recipeId } },
-    { new: true }
-  ).select("savedRecipes");
+  const isSaved = user.savedRecipes.some(
+    (id) => id.toString() === recipeId.toString()
+  );
 
   res
     .status(200)
-    .json(new apiResponse(200, user.savedRecipes, "Recipe saved successfully"));
+    .json(new apiResponse(200, { isSaved }, "Recipe save status fetched"));
 });
 
 const getSavedRecipes = asyncHandler(async (req, res) => {
@@ -324,7 +376,8 @@ export {
   updateUserProfile,
   updateUserPreferences,
   changePassword,
-  saveRecipe,
+  toggleSaveRecipe,
+  checkRecipeSaved,
   getSavedRecipes,
   removeSavedRecipe,
   addToShoppingList,
