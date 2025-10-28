@@ -1,15 +1,19 @@
 import React from "react";
 import useRecipe from "../../hooks/useRecipe";
 import RecipeCard from "../../shared/RecipeCard";
+import { Backpack } from "lucide-react";
+import BackButton from "../../shared/BackButton";
 
 const SavedRecipe = () => {
   const { savedRecipes } = useRecipe();
 
-
   const cards = savedRecipes?.data || [];
   return (
     <div className=" flex flex-col gap-4">
-      <h2 className="text-2xl md:text-3xl font-medium">Saved Recipes</h2>
+      <div className="flex flex-row justify-between">
+        <h2 className="text-2xl md:text-3xl font-medium">Saved Recipes</h2>
+        <BackButton />
+      </div>
 
       <div className="w-full ">
         {cards.length === 0 ? (
