@@ -15,7 +15,7 @@ const ShoppingItem = ({
   return (
     <div
       className={`flex items-start gap-4 p-3 rounded-lg border ${
-        item.isPurchased ? "bg-green-50/40 border-green-300" : "bg-white"
+        !item.isPurchased ? "bg-green-50/40 border-green-300" : "bg-[#a4a2a2]"
       }`}
     >
       <div className="flex-shrink-0">
