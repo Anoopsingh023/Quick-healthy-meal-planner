@@ -1,5 +1,4 @@
 import React from "react";
-import recipeImg from "../assets/recipe.jpg";
 import { Tag, TimeTag, PriceTag, CalorieTag } from "./Tag";
 import { useNavigate } from "react-router-dom";
 
