@@ -5,6 +5,7 @@ import Ingredients from "../../shared/Ingredients";
 import { base_url } from "../../utils/constant";
 import ShoppingItem from "../../shared/ShoppingItem";
 import axios from "axios";
+import BackButton from "../../shared/BackButton";
 
 const API_URL = `${base_url}/shopinglists`;
 
@@ -352,12 +353,7 @@ useEffect(() => {
     <div className="p-4 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="px-3 py-1 rounded bg-gray-100 border"
-          >
-            Back
-          </button>
+          <BackButton/>
           <Heading>Shopping List</Heading>
         </div>
 
