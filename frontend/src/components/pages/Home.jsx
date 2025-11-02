@@ -11,7 +11,8 @@ import RecipeCard from "../../shared/RecipeCard";
 import useShoppingList from "../../hooks/useShoppingList";
 import Ingredients from "../../shared/Ingredients";
 import Search from "../../shared/Search";
-
+import { useEffect } from "react";
+import SliderCard from "../../shared/SliderCard";
 
 const PrevArrow = ({ className, style, onClick }) => (
   <button
@@ -36,14 +37,21 @@ const NextArrow = ({ className, style, onClick }) => (
 );
 
 const Home = () => {
-   const items = ["veg", "Egg", "Potato", "Tomato"];
-   const { recipe, savedRecipes } = useRecipe();
-   const { shoppingList } = useShoppingList();
-   
+  const items = ["veg", "Egg", "Potato", "Tomato"];
+  const { recipe, savedRecipes, getSavedRecipes, getRandomRecipe } =
+    useRecipe();
+  const { shoppingList, getShoppingList } = useShoppingList();
+
   const navigate = useNavigate();
   const handleRecipe = (recipeId) => {
     navigate(`/dashboard/${recipeId}`);
   };
+
+  useEffect(() => {
+    getSavedRecipes();
+    getRandomRecipe();
+    getShoppingList();
+  }, []);
 
   const settings = {
     dots: true,
@@ -84,7 +92,6 @@ const Home = () => {
 
   return (
     <div className="flex flex-col sm:flex-row  gap-6 pb-40">
-      
       {/* col 1 */}
       <div className="flex-[4] flex flex-col justify-between gap-6">
         <div className="flex flex-col">
@@ -92,7 +99,7 @@ const Home = () => {
             Cook Smart,
             <br /> Eat Healthy.
           </h1>
-          <Search/>
+          <Search />
 
           <div className="flex flex-wrap gap-3 mt-4">
             {items.map((item) => (
@@ -106,55 +113,9 @@ const Home = () => {
           </div>
         </div>
 
-        <div className=" flex flex-col gap-4">
+        <div className=" flex flex-col gap-4 w-2xl">
           <h2 className="text-2xl md:text-3xl font-medium">Browse Recipes</h2>
-
-          <div className="w-full ">
-            {cards.length === 0 ? (
-              <div className="rounded-2xl p-6 border ">
-                <p className="text-gray-600">No saved recipes yet.</p>
-              </div>
-            ) : (
-              <div className="relative w-3xl">
-                <Slider {...settings}>
-                  {cards.map((savedRecipe) => (
-                    <div
-                      key={savedRecipe._id}
-                      className="p-1 outline-none w-42"
-                      aria-hidden={false}
-                    >
-                      <div className="flex flex-col gap-2 p-2 border rounded-2xl h-full">
-                        <div className="h-30 w-full rounded-md overflow-hidden">
-                          <img
-                            className="w-full h-full object-cover cursor-pointer"
-                            src={savedRecipe?.image || recipeImg}
-                            alt={savedRecipe?.title || "Recipe"}
-                            onClick={() => handleRecipe(savedRecipe._id)}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <h3
-                            className="text-md font-semibold line-clamp-1 hover:text-[#4b4b4b] cursor-pointer duration-300"
-                            onClick={() => handleRecipe(savedRecipe._id)}
-                          >
-                            {savedRecipe?.title}
-                          </h3>
-                          <div className="mt-2 text-xs flex flex-wrap gap-1 items-center">
-                            <TimeTag
-                              metadata={savedRecipe?.metadata?.cookingTime}
-                            />
-                            <CalorieTag
-                              metadata={savedRecipe?.metadata?.calories}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </Slider>
-              </div>
-            )}
-          </div>
+          <SliderCard cards={savedRecipes?.data || []} />
         </div>
 
         <div className="flex flex-col gap-4 w-md  ">
@@ -167,11 +128,11 @@ const Home = () => {
             ))}
           </div>
           {shoppingList?.data.items.length > 4 && (
-             <Link
-          to="/dashboard/shopping-bag"
-          state={{ items: shoppingList?.data.items }} 
-          className="self-start px-3 py-1 rounded bg-[#042d52] text-white hover:opacity-90"
-        >
+            <Link
+              to="/dashboard/shopping-bag"
+              state={{ items: shoppingList?.data.items }}
+              className="self-start px-3 py-1 rounded bg-[#042d52] text-white hover:opacity-90"
+            >
               More ({shoppingList?.data.items.length - 4} more)
             </Link>
           )}
@@ -179,8 +140,7 @@ const Home = () => {
       </div>
 
       {/* col 2 */}
-      <div className="flex-[2] flex flex-col justify-between gap-6">
-
+      <div className="flex-[3] flex flex-col justify-between gap-6">
         {/* Random Recipe Card */}
         <div className="">
           <RecipeCard recipe={recipe?.data} />
@@ -190,7 +150,6 @@ const Home = () => {
           <div className="border rounded-2xl p-4">
             <h3 className="text-2xl font-medium">Your Cooking Streaks</h3>
             <p className="mt-2 text-gray-700">4 Days</p>
-            
           </div>
         </div>
       </div>
