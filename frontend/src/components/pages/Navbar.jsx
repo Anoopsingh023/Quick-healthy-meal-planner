@@ -26,8 +26,9 @@ const Navbar = ({ onSearch, onToggleSidebar, isSidebarCollapsed }) => {
 
   const handleMenuClick = (menu) => {
     setOpen(false);
-    if (menu === "Your Channel") {
-      window.open(`/channel/${localStorage.getItem("userName")}`, "_blank");
+    if (menu === "Your Profile") {
+       navigate("/dashboard/user-profile")
+      // window.open(`/channel/${localStorage.getItem("userName")}`, "_blank");
     } else if (menu === "Logout") {
       // perform logout flow or call API
       ["token", "userId", "userName", "avatar", "coverImage", "name"].forEach(
@@ -99,21 +100,14 @@ const Navbar = ({ onSearch, onToggleSidebar, isSidebarCollapsed }) => {
                   alt="avatar"
                 />
                 {open && (
-                  <div className="bg-[#383838] absolute w-56 z-50 -left-45 top-14 p-5 rounded-2xl">
-                    <div className="flex items-center gap-4">
-                      <img className="h-10 w-10 rounded-full" src={localStorage.getItem("avatar")} alt="" />
-                      <div>
-                        <h4>{localStorage.getItem("name")}</h4>
-                        <p>{localStorage.getItem("userName")}</p>
-                      </div>
-                    </div>
-                    <hr className="my-2 border-[#848282]" />
+                  <div className="bg-[#042e52] text-white absolute w-56 z-50 -left-45 top-14 p-4 rounded-xl shadow-xl">
+                    
                     <ul>
-                      {["Your Channel", "Theme", "Help", "Logout"].map((menu, index) => (
+                      {["Your Profile", "Theme", "Help", "Logout"].map((menu, index) => (
                         <li
                           key={index}
                           onClick={() => handleMenuClick(menu)}
-                          className="py-2 px-4 hover:bg-[#565555] rounded-xl cursor-pointer"
+                          className="py-2 px-4 hover:bg-[#08527d] rounded-xl cursor-pointer"
                         >
                           {menu}
                         </li>

@@ -7,6 +7,7 @@ import RecipeDetail from "./components/pages/RecipeDetail";
 import ShoppingList from "./components/pages/ShoppingList";
 import SearchResults from "./components/pages/SearchResults";
 import SavedRecipe from "./components/pages/SavedRecipe";
+import ProfilePage from "./components/user/ProfilePage";
 
 const appRouter = createBrowserRouter([
   {
@@ -30,6 +31,7 @@ const appRouter = createBrowserRouter([
       { path: "shopping-bag", element: <ShoppingList /> },
       { path: "search", element: <SearchResults /> },
       { path: "saved-recipe", element: <SavedRecipe /> },
+      { path: "user-profile", element: <ProfilePage /> },
     ],
   },
 ]);

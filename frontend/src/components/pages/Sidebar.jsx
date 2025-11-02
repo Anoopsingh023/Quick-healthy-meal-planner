@@ -1,9 +1,10 @@
 import React from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.jpg";
 
 const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const username = localStorage.getItem("username") || "You";
 
   const navLinks = [
@@ -52,10 +53,9 @@ const Sidebar = ({ isCollapsed }) => {
         {!isCollapsed && (
           <div className="ml-2">
             <h3 className=" font-bold text-3xl text-[#0b7b2a]">Cookly</h3>
-            <p className="text-sm text-[#bfcbd6]">Hi, {username}</p>
+            <p className="text-sm text-[#bfcbd6]">Hi, {localStorage.getItem("name") || username}</p>
           </div>
         )}
-        
       </div>
 
       {/* Nav Links */}
@@ -68,24 +68,34 @@ const Sidebar = ({ isCollapsed }) => {
         {!isCollapsed ? (
           <div className="flex items-center gap-3">
             <img
+              onClick={() => navigate("/dashboard/user-profile")}
               src={localStorage.getItem("avatar") || logo}
               alt="avatar"
-              className="w-10 h-10 rounded-full"
+              className="w-10 h-10 rounded-full cursor-pointer"
             />
             <div>
-              <div className="text-sm font-medium">
+              <div
+                onClick={() => navigate("/dashboard/user-profile")}
+                className="text-sm font-medium cursor-pointer"
+              >
                 {localStorage.getItem("name") || username}
               </div>
-              <div className="text-xs text-[#bfcbd6]">View profile</div>
+              <div
+                onClick={() => navigate("/dashboard/user-profile")}
+                className="text-xs text-[#bfcbd6] cursor-pointer"
+              >
+                View profile
+              </div>
             </div>
           </div>
         ) : (
           <div className="flex justify-center">
             {/* only a small avatar when collapsed */}
             <img
+            onClick={() => navigate("/dashboard/user-profile")}
               src={localStorage.getItem("avatar") || logo}
               alt="avatar"
-              className="w-8 h-8 rounded-full"
+              className="w-10 h-10 rounded-full cursor-pointer"
             />
           </div>
         )}
