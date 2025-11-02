@@ -53,10 +53,10 @@ const useRecipe = (recipeId)=>{
     }
 
     useEffect(()=>{
-        getRandomRecipe()
-        getSavedRecipes()
-        getRecipeById()
+        // getRandomRecipe()
+        // getSavedRecipes()
+        // getRecipeById()
     },[])
-    return {recipe, savedRecipes, recipeById}
+    return {recipe, savedRecipes, recipeById, getRecipeById: getRecipeById, getSavedRecipes:getSavedRecipes, getRandomRecipe:getRandomRecipe}
 }
 export default useRecipe

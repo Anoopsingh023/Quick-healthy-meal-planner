@@ -20,11 +20,9 @@ const useShoppingList = () => {
 
     }
 
-    useEffect(()=>{
-        getShoppingList()
-    },[])
+   
 
-  return {shoppingList}
+  return {shoppingList,getShoppingList:getShoppingList}
 }
 
 export default useShoppingList
