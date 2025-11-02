@@ -9,7 +9,7 @@ import BackButton from "../../shared/BackButton";
 
 const RecipeDetail = () => {
   const { recipeId } = useParams();
-  const { recipeById } = useRecipe(recipeId);
+  const { recipeById,getRecipeById } = useRecipe(recipeId);
   const [isSaved, setIsSaved] = useState()
 
   const toggleSaveRecipe = async (recipeId) => {
@@ -50,6 +50,7 @@ const RecipeDetail = () => {
 
   useEffect(()=>{
     isRecipeSaved()
+    getRecipeById()
   },[])
 
   return (
