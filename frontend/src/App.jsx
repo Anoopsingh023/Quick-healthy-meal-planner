@@ -1,13 +1,17 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 import Dashboard from "./components/Dashboard";
 import Login from "./components/auth/Login";
 import Signup from "./components/auth/Signup";
-import Home from "./components/pages/Home";
-import RecipeDetail from "./components/pages/RecipeDetail";
-import ShoppingList from "./components/pages/ShoppingList";
-import SearchResults from "./components/pages/SearchResults";
-import SavedRecipe from "./components/pages/SavedRecipe";
-import ProfilePage from "./components/user/ProfilePage";
+import {
+  Home,
+  RecipeDetail,
+  ShoppingList,
+  SavedRecipe,
+  SearchResults,
+  ProfilePage
+} from "./components/pages/index";
 
 const appRouter = createBrowserRouter([
   {
