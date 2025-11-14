@@ -1,15 +1,14 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
-import { User } from "../models/user.model.js"
-import {Recipe} from "../models/recipe.model.js"
+import { User } from "../models/user.model.js";
+import { Recipe } from "../models/recipe.model.js";
 import {
   uploadOnCloudinary,
   deleteImageFromCloudinary,
 } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-
 
 // --------------------- TOKEN GENERATION ---------------------
 const generateTokens = async (userId) => {
@@ -128,12 +127,12 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetail = asyncHandler(async (req, res) => {
-  const { fullName, email } = req.body;
-  if (!fullName || !email) throw new apiError(400, "All fields are required");
+  const { fullName, userName } = req.body;
+  if (!fullName || !userName) throw new apiError(400, "All fields are required");
 
   const user = await User.findByIdAndUpdate(
     req.user._id,
-    { $set: { fullName, email } },
+    { $set: { fullName, userName } },
     { new: true }
   ).select("-password");
   return res
@@ -159,36 +158,82 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 });
 
 const updateUserProfile = asyncHandler(async (req, res) => {
-  const { dietPreference, cookingSkill, allergies } = req.body;
+  const { profile = {}, preferences = {} } = req.body;
+
+  const setObj = {};
+
+  // profile
+  if (profile.dietPreference)
+    setObj["profile.dietPreference"] = profile.dietPreference;
+  if (profile.cookingSkill)
+    setObj["profile.cookingSkill"] = profile.cookingSkill;
+
+  // preferences
+  if (preferences.budgetRange)
+    setObj["preferences.budgetRange"] = preferences.budgetRange;
+  if (preferences.cuisines)
+    setObj["preferences.cuisines"] = Array.isArray(preferences.cuisines)
+      ? preferences.cuisines
+      : [preferences.cuisines];
+
+  if (Object.keys(setObj).length === 0) {
+    return res
+      .status(400)
+      .json(new apiResponse(400, {}, "No valid fields provided to update"));
+  }
+
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
-    {
-      $set: {
-        "profile.dietPreference": dietPreference,
-        "profile.cookingSkill": cookingSkill,
-        "profile.allergies": allergies,
-      },
-    },
-    { new: true }
-  ).select("-password");
+    { $set: setObj },
+    { new: true, runValidators: true }
+  ).select("-password -refreshToken");
+
+  if (!updatedUser) {
+    throw new apiError(404, "User not found");
+  }
+
   res
     .status(200)
     .json(new apiResponse(200, updatedUser, "Profile updated successfully"));
 });
 
-const updateUserPreferences = asyncHandler(async (req, res) => {
-  const { budgetRange, cuisines } = req.body;
+const updateUserAllergies = asyncHandler(async (req, res) => {
+  // Accept either { allergies } or { profile: { allergies } }
+  let allergies = req.body.allergies ?? req.body.profile?.allergies;
+
+  if (typeof allergies === "undefined") {
+    return res.status(400).json(new apiResponse(400, {}, "No allergies provided"));
+  }
+
+  // Normalize: single string -> array
+  if (typeof allergies === "string") allergies = allergies.trim() === "" ? [] : [allergies];
+
+  if (!Array.isArray(allergies)) {
+    throw new apiError(400, "allergies must be an array of strings or a single string");
+  }
+
+  // Clean and validate each allergy
+  const cleaned = allergies
+    .map((a) => (typeof a === "string" ? a.trim() : ""))
+    .filter((a) => a.length > 0);
+
+  // If client sent empty array intentionally, that's allowed (clears allergies)
+  // Otherwise require at least one valid value
+  // (If you want to reject empty array, uncomment the following)
+  // if (cleaned.length === 0) throw new apiError(400, "Provide at least one allergy");
+
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
-    { $set: { preferences: { budgetRange, cuisines } } },
-    { new: true }
-  ).select("-password");
-  res
-    .status(200)
-    .json(
-      new apiResponse(200, updatedUser, "Preferences updated successfully")
-    );
+    { $set: { "profile.allergies": cleaned } }, // set to [] if cleared
+    { new: true, runValidators: true }
+  ).select("-password -refreshToken");
+
+  if (!updatedUser) throw new apiError(404, "User not found");
+
+  return res.status(200).json(new apiResponse(200, updatedUser, "Allergies updated successfully"));
 });
+
+
 
 // --------------------- PASSWORD MANAGEMENT ---------------------
 const changePassword = asyncHandler(async (req, res) => {
@@ -251,13 +296,17 @@ const toggleSaveRecipe = asyncHandler(async (req, res) => {
     isSaved = true;
   }
 
-  return res.status(200).json(
-    new apiResponse(
-      200,
-      { isSaved, savedRecipes: updatedUser.savedRecipes },
-      alreadySaved ? "Recipe removed from saved list" : "Recipe saved successfully"
-    )
-  );
+  return res
+    .status(200)
+    .json(
+      new apiResponse(
+        200,
+        { isSaved, savedRecipes: updatedUser.savedRecipes },
+        alreadySaved
+          ? "Recipe removed from saved list"
+          : "Recipe saved successfully"
+      )
+    );
 });
 
 const checkRecipeSaved = asyncHandler(async (req, res) => {
@@ -290,7 +339,8 @@ const getSavedRecipes = asyncHandler(async (req, res) => {
     .populate({
       path: "savedRecipes",
       model: "Recipe",
-      select: "title image description ingredients metadata.dietType metadata.cuisine metadata.cookingTime metadata.difficulty metadata.calories metadata.costEstimate createdBy",
+      select:
+        "title image description ingredients metadata.dietType metadata.cuisine metadata.cookingTime metadata.difficulty metadata.calories metadata.costEstimate createdBy",
     })
     .select("savedRecipes");
 
@@ -302,7 +352,9 @@ const getSavedRecipes = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new apiResponse(200, savedRecipes, "Saved recipes fetched successfully"));
+    .json(
+      new apiResponse(200, savedRecipes, "Saved recipes fetched successfully")
+    );
 });
 
 const removeSavedRecipe = asyncHandler(async (req, res) => {
@@ -374,7 +426,7 @@ export {
   updateAccountDetail,
   updateUserAvatar,
   updateUserProfile,
-  updateUserPreferences,
+  updateUserAllergies,
   changePassword,
   toggleSaveRecipe,
   checkRecipeSaved,

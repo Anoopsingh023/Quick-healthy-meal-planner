@@ -8,7 +8,7 @@ import {
   updateAccountDetail,
   updateUserAvatar,
   updateUserProfile,
-  updateUserPreferences,
+  updateUserAllergies,
   changePassword,
   toggleSaveRecipe,
   checkRecipeSaved,
@@ -36,7 +36,7 @@ router.get("/me", protect, getCurrentUser);
 router.put("/me/account", protect, updateAccountDetail);
 router.put("/me/avatar", protect, upload.single("avatar"), updateUserAvatar);
 router.put("/me/profile", protect, updateUserProfile);
-router.put("/me/preferences", protect, updateUserPreferences);
+router.put("/me/allergies", protect, updateUserAllergies);
 router.put("/me/password", protect, changePassword);
 
 // --------------------- RECIPE & SHOPPING LIST ---------------------
