@@ -95,87 +95,211 @@ const deleteRecipe = asyncHandler(async (req, res) => {
 
 // Search / Filter Recipes
 const searchRecipes = asyncHandler(async (req, res) => {
-  const { query } = req.query;
+  const {
+    query,
+    cuisine,
+    dietType,
+    difficulty,
+    costMin,
+    costMax,
+    costRange,
+    page = 1,
+    limit = 12,
+    sort = "latest",
+  } = req.query;
 
-  if (!query) {
-    throw new apiError(400, "Query parameter is required");
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const pageSize = Math.min(50, parseInt(limit, 10) || 12); // cap to 50 to avoid heavy API calls
+
+  // Build Mongo filter (same as previous design)
+  const filter = {};
+
+  // Text search across fields if query provided
+  if (query && query.trim()) {
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(escaped, "i");
+    filter.$or = [
+      { title: { $regex: regex } },
+      { description: { $regex: regex } },
+      { tags: { $regex: regex } },
+      // { "ingredients.name": { $regex: regex } },
+      { "metadata.cuisine": { $regex: regex } },
+    ];
   }
 
-  // 1. Check database first
-  let recipes = await Recipe.find({
-    $or: [
-      { title: { $regex: query, $options: "i" } },
-      { description: { $regex: query, $options: "i" } },
-      { tags: { $regex: query, $options: "i" } },
-    ],
-  });
-
-  if (recipes.length > 0) {
-    return res
-      .status(200)
-      .json(
-        new apiResponse(
-          200,
-          { count: recipes.length, data: recipes },
-          "Recipe fetched successfully"
-        )
+  // Cuisine(s)
+  if (cuisine) {
+    const cuisines = cuisine.split(",").map((c) => c.trim()).filter(Boolean);
+    if (cuisines.length) {
+      filter.$or = filter.$or || [];
+      filter.$or.push(
+        { "metadata.cuisine": { $in: cuisines } },
+        { tags: { $in: cuisines } },
+        { cuisines: { $in: cuisines } }
       );
+    }
   }
 
-  // 2. Fetch from Spoonacular (complexSearch for IDs)
+  // Diet Type exact match
+  if (dietType) {
+    filter["metadata.dietType"] = dietType;
+  }
+
+  // Difficulty
+  if (difficulty) {
+    const diffs = difficulty.split(",").map((d) => d.trim()).filter(Boolean);
+    if (diffs.length) filter["metadata.difficulty"] = { $in: diffs };
+  }
+
+  // Cost range parsing
+  let costLower = undefined;
+  let costUpper = undefined;
+  if (costRange) {
+    const parts = costRange.split("-").map((p) => p.trim());
+    if (parts[0]) costLower = Number(parts[0]);
+    if (parts[1]) costUpper = Number(parts[1]);
+  }
+  if (costMin) costLower = Number(costMin);
+  if (costMax) costUpper = Number(costMax);
+
+  if (!isNaN(costLower) || !isNaN(costUpper)) {
+    filter["metadata.costEstimate"] = {};
+    if (!isNaN(costLower)) filter["metadata.costEstimate"].$gte = costLower;
+    if (!isNaN(costUpper)) filter["metadata.costEstimate"].$lte = costUpper;
+    if (Object.keys(filter["metadata.costEstimate"]).length === 0)
+      delete filter["metadata.costEstimate"];
+  }
+
+  // Ensure we have ingredients & steps (optional but usually desired)
+  filter.$and = filter.$and || [];
+  filter.$and.push({ "ingredients.0": { $exists: true } }, { "steps.0": { $exists: true } });
+
+  // Sorting
+  let sortObj = { createdAt: -1 };
+  if (sort === "costAsc") sortObj = { "metadata.costEstimate": 1 };
+  if (sort === "costDesc") sortObj = { "metadata.costEstimate": -1 };
+  if (sort === "timeAsc") sortObj = { "metadata.cookingTime": 1 };
+  if (sort === "timeDesc") sortObj = { "metadata.cookingTime": -1 };
+
+  // 1) Try DB first
+  const [recipesInDb, totalInDb] = await Promise.all([
+    Recipe.find(filter)
+      .populate("createdBy", "userName email avatar")
+      .sort(sortObj)
+      .skip((pageNum - 1) * pageSize)
+      .limit(pageSize)
+      .lean(),
+    Recipe.countDocuments(filter),
+  ]);
+
+  if (recipesInDb && recipesInDb.length > 0) {
+    return res.status(200).json({
+      success: true,
+      source: "database",
+      meta: {
+        page: pageNum,
+        limit: pageSize,
+        total: totalInDb,
+        totalPages: Math.ceil(totalInDb / pageSize),
+      },
+      data: recipesInDb,
+    });
+  }
+
+  // 2) If DB empty -> query Spoonacular (complexSearch for IDs), then fetch details and save
   const apiKey = process.env.SPOONACULAR_API_KEY;
-  const searchUrl = `https://api.spoonacular.com/recipes/complexSearch?query=${query}&number=3&apiKey=${apiKey}`;
-  const { data } = await axios.get(searchUrl);
-
-  if (!data.results || data.results.length === 0) {
-    throw new apiError(404, "No recipes found in DB or Spoonacular");
+  if (!apiKey) {
+    return res.status(500).json({ success: false, message: "Spoonacular API key not configured" });
   }
 
-  // 3. Fetch full recipe info for each result
-  const detailedRecipes = [];
-  for (const recipe of data.results) {
-    const detailUrl = `https://api.spoonacular.com/recipes/${recipe.id}/information?includeNutrition=true&apiKey=${apiKey}`;
-    const { data: detailData } = await axios.get(detailUrl);
+  // Build spoonacular complexSearch query params
+  const spParams = new URLSearchParams();
+  if (query) spParams.append("query", query);
+  spParams.append("number", String(pageSize)); // how many results to request
+  // Try to map cuisine param
+  if (cuisine) {
+    // pass the first cuisine or the comma-separated list
+    spParams.append("cuisine", cuisine);
+  }
+  // Map dietType to Spoonacular diet parameter for common values
+  if (dietType) {
+    // Spoonacular diet expects values like: "vegetarian", "vegan", "pescetarian", "gluten free"
+    const dietMap = {
+      Veg: "vegetarian",
+      Vegan: "vegan",
+      "Non-Veg": "", // no direct mapping; skip
+      Any: "",
+    };
+    const sdiet = dietMap[dietType] || "";
+    if (sdiet) spParams.append("diet", sdiet);
+  }
 
-    const mapped = mapSpoonacularToRecipe(detailData);
+  const searchUrl = `https://api.spoonacular.com/recipes/complexSearch?${spParams.toString()}&apiKey=${apiKey}`;
 
-    // Check if already saved
-    let existing = await Recipe.findOne({ spoonacularId: detailData.id });
-    if (!existing) {
+  let searchRes;
+  try {
+    searchRes = await axios.get(searchUrl);
+  } catch (err) {
+    console.error("Spoonacular complexSearch error:", err?.response?.data || err.message);
+    return res.status(502).json({ success: false, message: "Error fetching from Spoonacular" });
+  }
+
+  const results = searchRes.data?.results || [];
+  if (!results.length) {
+    return res.status(404).json({ success: false, message: "No recipes found (DB or Spoonacular)" });
+  }
+
+  // For each result, fetch detailed information and save (or reuse if already present)
+  const savedRecipes = [];
+  for (const r of results) {
+    try {
+      // Check local by spoonacularId to avoid duplicate fetch/save
+      let existing = await Recipe.findOne({ spoonacularId: r.id });
+      if (existing) {
+        savedRecipes.push(existing);
+        continue;
+      }
+
+      const detailUrl = `https://api.spoonacular.com/recipes/${r.id}/information?includeNutrition=true&apiKey=${apiKey}`;
+      const detailRes = await axios.get(detailUrl);
+      const detailData = detailRes.data;
+
+      const mapped = mapSpoonacularToRecipe(detailData);
+
       const newRecipe = new Recipe({
         ...mapped,
         spoonacularId: detailData.id,
         source: "Spoonacular",
       });
+
       await newRecipe.save();
-      detailedRecipes.push(newRecipe);
-    } else {
-      detailedRecipes.push(existing);
+      savedRecipes.push(newRecipe);
+    } catch (err) {
+      console.error(`Failed to fetch/save recipe id=${r.id}:`, err?.response?.data || err.message);
+      // continue to next recipe instead of failing entire flow
     }
   }
 
-  // 4. Return results
-  res
-    .status(200)
-    .json(
-      new apiResponse(
-        200,
-        {
-          source: "spoonacular",
-          count: detailedRecipes.length,
-          data: detailedRecipes,
-        },
-        "Recipe fetched successfully"
-      )
-    );
+  if (!savedRecipes.length) {
+    return res.status(502).json({
+      success: false,
+      message: "Spoonacular returned results but failed to fetch/save details",
+    });
+  }
+
+  // Return saved recipes (paged up to pageSize)
+  return res.status(200).json({
+    success: true,
+    source: "spoonacular",
+    meta: {
+      requested: pageSize,
+      returned: savedRecipes.length,
+    },
+    data: savedRecipes,
+  });
 });
 
-
-/**
- * GET /api/recipes/recommend
- * Returns one random recipe recommended for the logged-in user based on preferences.
- * Requires auth middleware to set req.user._id
- */
+// recomended recipe
 const getRecommendedRecipe = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   if (!userId) {
