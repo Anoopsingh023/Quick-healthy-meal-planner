@@ -9,8 +9,8 @@ import BackButton from "../../shared/BackButton";
 
 const RecipeDetail = () => {
   const { recipeId } = useParams();
-  const { recipeById,getRecipeById } = useRecipe(recipeId);
-  const [isSaved, setIsSaved] = useState()
+  const { recipeById, getRecipeById } = useRecipe(recipeId);
+  const [isSaved, setIsSaved] = useState();
 
   const toggleSaveRecipe = async (recipeId) => {
     try {
@@ -24,40 +24,36 @@ const RecipeDetail = () => {
         }
       );
       console.log("Recipe Saved", res.data);
-      isRecipeSaved()
+      isRecipeSaved();
     } catch (error) {
       console.log("Error in save recipe", error);
     }
   };
 
-  const isRecipeSaved = async(recipeById)=>{
+  const isRecipeSaved = async (recipeById) => {
     try {
-      const res = await axios.get(
-        `${base_url}/users/is-saved/${recipeId}`,
-        {
-          headers: {
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
-        }
-      );
+      const res = await axios.get(`${base_url}/users/is-saved/${recipeId}`, {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token"),
+        },
+      });
       console.log("Is Recipe Saved", res.data);
-      setIsSaved(res.data.data.isSaved)
-
+      setIsSaved(res.data.data.isSaved);
     } catch (error) {
       console.log("Error in save recipe", error);
     }
-  }
+  };
 
-  useEffect(()=>{
-    isRecipeSaved()
-    getRecipeById()
-  },[])
+  useEffect(() => {
+    isRecipeSaved();
+    getRecipeById();
+  }, []);
 
   return (
     <div>
       <div className="flex flex-row justify-between w-3xl">
         <h2 className="text-4xl font-medium">{recipeById?.data.title}</h2>
-        <BackButton/>
+        <BackButton />
       </div>
       <div className="flex">
         <div className="flex-2">
@@ -76,39 +72,44 @@ const RecipeDetail = () => {
           <div>
             <h4 className="text-2xl font-semibold px-4 ">Description</h4>
             <div className="p-4">{recipeById?.data.description}</div>
-            {isSaved? <button
-          onClick={() => toggleSaveRecipe(recipeById?.data._id)}
-          className="border px-4 py-1 cursor-pointer rounded-md h-10  bg-green-600 text-white hover:bg-green-700 transition-all duration-200"
-        >
-          Saved
-        </button> :<button
-          onClick={() => toggleSaveRecipe(recipeById?.data._id)}
-          className="border px-4 py-1 cursor-pointer rounded-md h-10  bg-green-600 text-white hover:bg-green-700 transition-all duration-200"
-        >
-          Save
-        </button>}
+            {isSaved ? (
+              <button
+                onClick={() => toggleSaveRecipe(recipeById?.data._id)}
+                className="border px-4 py-1 cursor-pointer rounded-md h-10  bg-green-600 text-white hover:bg-green-700 transition-all duration-200"
+              >
+                Saved
+              </button>
+            ) : (
+              <button
+                onClick={() => toggleSaveRecipe(recipeById?.data._id)}
+                className=" px-4 py-1 cursor-pointer rounded-md h-10  bg-green-600 shadow-lg text-white hover:bg-green-700 transition-all duration-200"
+              >
+                Save
+              </button>
+            )}
           </div>
         </div>
         <div className="flex-1 flex gap-2 flex-col ">
-          <img
-            className="h-50 rounded-2xl"
-            src={recipeById?.data.image}
-            alt=""
-          />
-          <div className="flex flex-wrap gap-2">
-            <TimeTag metadata={recipeById?.data?.metadata.cookingTime} />
-            <CalorieTag
-              metadata={Math.trunc(recipeById?.data?.metadata.calories)}
+            <img
+              className="h-50 w-full rounded-2xl shadow-md"
+              src={recipeById?.data.image}
+              alt=""
             />
-            <PriceTag metadata={recipeById?.data?.metadata.costEstimate} />
-            <Tag metadata={recipeById?.data.metadata.dietType} />
-            <Tag metadata={recipeById?.data.metadata.cuisine} />
-            <Tag metadata={recipeById?.data.metadata.difficulty} />
-          </div>
+            <div className="flex flex-wrap gap-2">
+              <TimeTag metadata={recipeById?.data?.metadata.cookingTime} />
+              <CalorieTag
+                metadata={Math.trunc(recipeById?.data?.metadata.calories)}
+              />
+              <PriceTag metadata={recipeById?.data?.metadata.costEstimate} />
+              <Tag metadata={recipeById?.data.metadata.dietType} />
+              <Tag metadata={recipeById?.data.metadata.cuisine} />
+              <Tag metadata={recipeById?.data.metadata.difficulty} />
+            </div>
+         
 
-          <div className="border p-4 rounded-2xl">
+          <div className="bg-[#cacaca] shadow-md p-4 rounded-2xl">
             <h4 className="text-2xl font-semibold mb-2 ">Ingredients</h4>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 ">
               {recipeById?.data.ingredients.map((ingredient) => (
                 <div key={ingredient._id}>
                   <Ingredients {...ingredient} />
@@ -116,8 +117,8 @@ const RecipeDetail = () => {
               ))}
             </div>
           </div>
-          <div className="border p-4 rounded-2xl">
-            <h4 className="text-2xl font-semibold ">Tags</h4>
+          <div className="bg-[#cacaca] shadow-md p-4 rounded-2xl">
+            <h4 className="text-2xl font-semibold mb-2 ">Tags</h4>
             <div className="flex flex-wrap gap-2">
               {recipeById?.data.tags.map((tag, index) => (
                 <div key={index} className="flex flex-row gap-4">
