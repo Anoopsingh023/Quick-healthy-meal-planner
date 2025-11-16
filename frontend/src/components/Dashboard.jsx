@@ -12,21 +12,19 @@ const Dashboard = () => {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const toggleSidebar = () => {
-    setSidebarCollapsed((prev) => !prev);
+    // setSidebarCollapsed((prev) => !prev);
   };
 
   return (
     <div className="min-h-screen bg-[#b7b7b7] relative overflow-hidden">
       {/* Sidebar (always full height & above navbar) */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 transition-all duration-300 bg-[#042d52] shadow-lg ${
-          isSidebarCollapsed ? "w-20" : "w-64"
-        }`}
+        className={`fixed top-0 left-0 bottom-0 z-50 transition-all duration-300 bg-[#042d52] shadow-lg w-22 }`}
       >
         <Sidebar
-          isCollapsed={isSidebarCollapsed}
+          // isCollapsed={isSidebarCollapsed}
         />
-        {isSidebarCollapsed ? (
+        {/* {isSidebarCollapsed ? (
           <div
             onClick={toggleSidebar}
             className="pt-3 pl-3 w-10 h-12 border-l border-t border-b border-[#bfcbd6] text-[#bfcbd6] cursor-pointer rounded-l-md duration-300
@@ -42,7 +40,7 @@ const Dashboard = () => {
           >
             <i class="fa-solid fa-angles-left"></i>
           </div>
-        )}
+        )} */}
       </aside>
 
       {/* Navbar (below sidebar visually) */}
@@ -53,15 +51,15 @@ const Dashboard = () => {
         <Navbar
           onSearch={setSearchQuery}
           onToggleSidebar={toggleSidebar}
-          isSidebarCollapsed={isSidebarCollapsed}
+          // isSidebarCollapsed={isSidebarCollapsed}
         />
       </header>
 
       {/* Main content area */}
       <main
-        className={`transition-all duration-300 overflow-y-auto`}
+        className={`transition-all duration-300 overflow-y-auto ml-20`}
         style={{
-          marginLeft: isSidebarCollapsed ? 64 : 268, // same as sidebar width
+          // marginLeft: isSidebarCollapsed ? 75 : 268, // same as sidebar width
           paddingTop: NAVBAR_HEIGHT,
           minHeight: "100vh",
         }}

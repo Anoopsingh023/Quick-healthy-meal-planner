@@ -20,7 +20,7 @@ const Home = () => {
   return (
     <div className="flex flex-col sm:flex-row  gap-6 pb-40">
       {/* col 1 */}
-      <div className="flex-[4] flex flex-col justify-between gap-6">
+      <div className="flex-[5] flex flex-col justify-between gap-6">
         <div className="flex flex-col">
           <h1 className="font-bold text-4xl md:text-6xl lg:text-7xl leading-tight">
             Cook Smart,
