@@ -75,9 +75,9 @@ const Navbar = ({ onSearch, onToggleSidebar, isSidebarCollapsed }) => {
             </span>
 
             {/* Show app name in navbar ONLY when sidebar is collapsed */}
-            {isSidebarCollapsed && (
-              <h2 className="font-bold ml-10 text-3xl text-[#0b7b2a]">Cookly</h2>
-            )}
+            {/* {isSidebarCollapsed && ( */}
+              <h2 className="font-bold ml-15 text-3xl text-[#0b7b2a] ">Cookly</h2>
+            {/* )} */}
           </div>
 
           <marquee behavior="" direction="" className="text-2xl w-3xl">Type what you have. Cook what you can</marquee>
