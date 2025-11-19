@@ -30,6 +30,7 @@ const getShoppingList = asyncHandler(async (req, res) => {
 const addItem = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const {
+    img,
     name,
     quantity = "",
     category = "",
@@ -45,6 +46,7 @@ const addItem = asyncHandler(async (req, res) => {
 
   const newItem = {
     _id: new mongoose.Types.ObjectId().toString(),
+    img: String(img),
     name: String(name).trim(),
     quantity: String(quantity),
     category: String(category),
@@ -181,6 +183,7 @@ const generateFromRecipe = asyncHandler(async (req, res) => {
     // turn each ingredient into shopping item
     const newItems = ingredients.map((ing) => ({
       _id: new mongoose.Types.ObjectId().toString(),
+      img: String(ing.img || ""),
       name: String(ing.name || "").trim(),
       quantity: String(ing.quantity || ""),
       category: "", // optional mapping if you have ingredient categories

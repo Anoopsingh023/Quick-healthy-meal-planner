@@ -8,6 +8,7 @@ const shoppingListSchema = new mongoose.Schema({
   },
   items: [
     {
+      img:{ type: String},
       name: { type: String, required: true },  // "Tomato"
       quantity: { type: String },              // "2 pcs", "500g"
       category: { type: String },              // "Vegetable", "Dairy", etc.
