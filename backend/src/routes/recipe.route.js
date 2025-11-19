@@ -13,6 +13,7 @@ import {
   getOrGenerateRecipeDetails,
 } from "../controllers/aiRecipe.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
+import { dbSearchRecipes } from "../controllers/searchRecipe.controller.js";
 
 const router = express.Router();
 
@@ -28,6 +29,7 @@ router.put("/re/update/:id", protect, updateRecipe);
 router.delete("/re/delete/:id", protect, deleteRecipe);
 // Add this before getAllRecipes
 router.get("/search", protect, searchRecipes);
+router.get("/db-search", dbSearchRecipes);
 router.get("/recommend",protect, getRecommendedRecipe);
 
 // AiRecipe generator
