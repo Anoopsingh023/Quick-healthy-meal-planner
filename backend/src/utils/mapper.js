@@ -7,6 +7,7 @@ export function mapSpoonacularToRecipe(spoonacularData) {
       : "",
     ingredients: spoonacularData.extendedIngredients
       ? spoonacularData.extendedIngredients.map((ing) => ({
+          img: ing.image,
           name: ing.name,
           quantity: `${ing.amount} ${ing.unit}`.trim(),
           optional: false,
