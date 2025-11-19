@@ -12,6 +12,7 @@ import {
   SearchResults,
   ProfilePage
 } from "./components/pages/index";
+import DbSearch from "./components/pages/DbSearch";
 
 const appRouter = createBrowserRouter([
   {
@@ -34,6 +35,7 @@ const appRouter = createBrowserRouter([
       { path: ":recipeId", element: <RecipeDetail /> },
       { path: "shopping-bag", element: <ShoppingList /> },
       { path: "search", element: <SearchResults /> },
+      { path: "db-search", element: <DbSearch /> },
       { path: "saved-recipe", element: <SavedRecipe /> },
       { path: "user-profile", element: <ProfilePage /> },
     ],
