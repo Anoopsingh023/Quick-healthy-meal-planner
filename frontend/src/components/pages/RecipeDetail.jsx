@@ -44,6 +44,20 @@ const RecipeDetail = () => {
     }
   };
 
+  const addToShoppingList = async (recipeId) =>{
+    try {
+      const res = await axios.post(`${base_url}/shopinglists/generate/${recipeId}`,{}, {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token"),
+        },
+      });
+      console.log("Added to shopping list", res.data);
+      // setIsSaved(res.data.data.isSaved);
+    } catch (error) {
+      console.log("Error in add to shopping list", error)
+    }
+  }
+
   useEffect(() => {
     isRecipeSaved();
     getRecipeById();
@@ -107,7 +121,7 @@ const RecipeDetail = () => {
             </div>
          
 
-          <div className="bg-[#cacaca] shadow-md p-4 rounded-2xl">
+          {/* <div className="bg-[#cacaca] shadow-md p-4 rounded-2xl">
             <h4 className="text-2xl font-semibold mb-2 ">Ingredients</h4>
             <div className="flex flex-col gap-1 ">
               {recipeById?.data.ingredients.map((ingredient) => (
@@ -116,7 +130,7 @@ const RecipeDetail = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
           <div className="bg-[#cacaca] shadow-md p-4 rounded-2xl">
             <h4 className="text-2xl font-semibold mb-2 ">Tags</h4>
             <div className="flex flex-wrap gap-2">
@@ -129,6 +143,20 @@ const RecipeDetail = () => {
           </div>
         </div>
       </div>
+      <div className=" p-4 rounded-2xl">
+        <div className="flex flex-row justify-between mb-4">
+            <h4 className="text-2xl font-semibold mb-2 ">Ingredients</h4>
+            <button onClick={()=>addToShoppingList(recipeId)} className="px-4 py-2 bg-green-500">Add</button>
+        </div>
+
+            <div className="grid grid-cols-7 flex-wrap gap-4 ">
+              {recipeById?.data.ingredients.map((ingredient) => (
+                <div key={ingredient._id}>
+                  <Ingredients {...ingredient} />
+                </div>
+              ))}
+            </div>
+          </div>
     </div>
   );
 };
