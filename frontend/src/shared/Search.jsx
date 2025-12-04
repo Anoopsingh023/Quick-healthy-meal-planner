@@ -456,7 +456,7 @@ const Search = ({ onSelect, onSubmit }) => {
       : null;
 
   return (
-    <div className="relative w-full max-w-xl mt-6">
+    <div className="relative w-full max-w-2xl mt-6">
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <div className="flex items-center bg-white rounded-full shadow-md border border-gray-200 focus-within:ring-2 focus-within:ring-green-400 transition-all duration-200 flex-1">
           <div className="relative flex-1">

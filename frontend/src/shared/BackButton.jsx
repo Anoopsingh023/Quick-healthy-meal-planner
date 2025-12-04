@@ -9,7 +9,7 @@ const BackButton = () => {
     <div>
       <button
         onClick={() => navigate(-1)}
-        className="px-3 py-1 rounded cursor-pointer bg-green-600 text-white hover:bg-green-700 transition-all duration-200"
+        className="px-3 py-1 rounded cursor-pointer bg-green-600 shadow-lg text-white hover:bg-green-700 transition-all duration-200"
       >
         Back
       </button>

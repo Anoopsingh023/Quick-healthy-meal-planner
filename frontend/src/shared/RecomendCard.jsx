@@ -26,7 +26,7 @@ const RecomendCard = ({ recipe = {} }) => {
   const md = recipe?.metadata || {};
 
   return (
-    <div className="relative flex flex-col gap-3 bg-[#07466a] p-0.5 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+    <div className="relative flex flex-col gap-3 bg-[#07466a] p-0.5 rounded-2xl shadow-4xl hover:shadow-xl transition-shadow duration-300 overflow-hidden">
       {/* Top badge / likes */}
       <div className="absolute z-10 top-3 right-3">
         <div className="flex ">
@@ -57,7 +57,7 @@ const RecomendCard = ({ recipe = {} }) => {
       <div className="w-full overflow-hidden">
         <div className="relative w-full h-44 sm:h-48 md:h-60 lg:h-62 rounded-b-none rounded-2xl overflow-hidden">
           <img
-            className="w-full h-full object-cover transform transition-transform duration-500 ease-out hover:scale-105"
+            className="w-full h-full object-cover  transform transition-transform duration-500 ease-out hover:scale-105"
             src={imageSrc}
             alt={title ?? "Recipe image"}
           />
@@ -73,16 +73,16 @@ const RecomendCard = ({ recipe = {} }) => {
       {/* Buttons row — kept as separate block but visually elevated */}
       <div className=" -mt-16 mb-7 flex items-center justify-end">
         <div className="text-xs  text-zinc-500 dark:text-zinc-400 hidden sm:block z-20">
-          <div className="bg-[#042d52] py-2 mx-1 rounded-tl-2xl rounded-br-2xl z-30 ">
+          <div className="bg-[#042d52] py-2 mx-1 rounded-tl-2xl rounded-tr-2xl -mb-1 z-30 ">
             <span className="inline-flex items-center gap-2 px-3  text-sm font-medium  text-white ">
               Cooking Time: {md?.cookingTime}min
             </span>
           </div>
-          <div className="bg-green-600 py-2 z-28 rounded-bl-2xl flex flex-row gap-2">
-            <span className="inline-flex items-center gap-2 px-3  text-sm font-medium  text-gray-800 ">
+          <div className="bg-green-600 text-white py-2 z-28 rounded-t-2xl flex flex-row gap-2">
+            <span className="inline-flex items-center gap-2 px-3 text-sm font-medium">
               ₹{md?.costEstimate}
             </span>
-            <span className="inline-flex items-center gap-2 px-3  text-sm font-medium  text-gray-800 ">
+            <span className="inline-flex items-center gap-2 px-3 text-sm font-medium">
               <img src={calories} alt="" className="h-4 w-4" />
               {Math.trunc(md?.calories)}kcal
             </span>
@@ -94,7 +94,7 @@ const RecomendCard = ({ recipe = {} }) => {
       <div className="bg-[#08324a] -mt-18 pt-8 z-15 rounded-tl-3xl">
       <div className="px-6 pb-4">
         <h3
-          className="text-xl -mt-3 w-[70%] sm:text-2xl font-semibold text-zinc-900 dark:text-zinc-100 cursor-pointer hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors duration-200 line-clamp-2"
+          className="text-xl -mt-3 w-[65%] sm:text-2xl font-semibold text-zinc-900 dark:text-zinc-100 cursor-pointer hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors duration-200 line-clamp-2"
           title={title}
         >
           {title}
