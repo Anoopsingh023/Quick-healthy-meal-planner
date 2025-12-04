@@ -1,125 +1,170 @@
-import React from 'react'
-import useRecipe from '../hooks/useRecipe';
-import { useNavigate } from 'react-router-dom';
-import Slider from 'react-slick';
-import { CalorieTag, TimeTag } from './Tag';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import Slider from "react-slick";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import biryani from "../assets/recipe/biryani.jpg";
+import cake from "../assets/recipe/cake.jpg";
+import dosa from "../assets/recipe/dosa.jpg";
+import indian from "../assets/recipe/indian.jpg";
+import noodle from "../assets/recipe/noodle.jpg";
+import paneer from "../assets/recipe/paneer.jpg";
+import pizza from "../assets/recipe/pizza.jpg";
+import nonVeg from "../assets/recipe/nonVeg.jpg";
+import axios from "axios";
+import { base_url } from "../utils/constant";
 
-const PrevArrow = ({ className, style, onClick }) => (
+// Uploaded file path (for transform by your toolchain)
+const uploadedModelPath = "sandbox:/mnt/data/recipe.model.js";
+
+const PrevArrow = ({ onClick }) => (
   <button
-    aria-label="Previous"
-    className="absolute -left-3 top-1/2 -translate-y-1/2 z-30 bg-white/90 hover:bg-white p-2 rounded-full shadow cursor-pointer"
-    style={{ ...style }}
+    aria-label="Previous slide"
     onClick={onClick}
+    className="absolute left-2 top-1/2 cursor-pointer -translate-y-1/2 z-20 bg-white/95 hover:bg-white p-2 rounded-full shadow focus:outline-none"
   >
     <ChevronLeft size={18} />
   </button>
 );
 
-const NextArrow = ({ className, style, onClick }) => (
+const NextArrow = ({ onClick }) => (
   <button
-    aria-label="Next"
-    className="absolute -right-3 top-1/2 -translate-y-1/2 z-30 bg-white/90 hover:bg-white p-2 rounded-full shadow cursor-pointer"
-    style={{ ...style }}
+    aria-label="Next slide"
     onClick={onClick}
+    className="absolute right-2 cursor-pointer top-1/2 -translate-y-1/2 z-20 bg-white/95 hover:bg-white p-2 rounded-full shadow focus:outline-none"
   >
     <ChevronRight size={18} />
   </button>
 );
 
 const SliderCard = ({ cards = [] }) => {
-    const { recipe, savedRecipes,getSavedRecipes,getRandomRecipe } = useRecipe();
-//    const { shoppingList } = useShoppingList();
-   
   const navigate = useNavigate();
-  const handleRecipe = (recipeId) => {
-    navigate(`/dashboard/${recipeId}`);
+
+  const dishes = [
+    { id: 1, img: indian, name: "Indian",tag: ["indian"] },
+    { id: 2, img: noodle, name: "Noodle", tag: ["noodle","maggie"] },
+    { id: 3, img: dosa, name: "Dosa",tag: ["dosa", "masala dosa"] },
+    { id: 4, img: paneer, name: "Paneer" ,tag:["paneer"]},
+    { id: 5, img: cake, name: "Cake", tag:["cake", "bakery"] },
+    { id: 6, img: biryani, name: "Biryani", tag: ["biryani", "haidrabadi biryani"] },
+    { id: 7, img: pizza, name: "Pizza", tag: ["pizza"] },
+    { id: 8, img: nonVeg, name: "Non Veg" ,tag: ["chicken", "mutton", "fish"]},
+  ];
+
+  const getRecipeFromDb = async (tagsArray) => {
+    try {
+      const tag = tagsArray.join(",");
+      const isCuisine = tag.toLowerCase() === "indian";
+      const params = isCuisine ? { cuisine: tag } : { foodType: tag };
+      const res = await axios.get(`${base_url}/recipes/db-search`, {
+        params,
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token"),
+        },
+      });
+
+      // you can pass the query in the URL so the search page can re-run the query
+      const queryString = new URLSearchParams(params).toString();
+
+      // If you'd rather pass data through state, use: navigate('/dashboard/search', { state: { results: res.data } })
+      navigate(`/dashboard/db-search?${queryString}`);
+
+      // optional: log the returned data for debugging
+      console.log("recipes from DB for", tag, res.data);
+    } catch (error) {
+      console.error("Error fetching recipes by dish:", error);
+      // optionally show a user-facing toast or notification here
+    }
   };
 
+  // compute whether to enable infinite depending on number of cards
+  const slidesToShowDesktop = 5;
+  const slidesToShowTablet = 2;
+  const slidesToShowMobile = 1;
 
-    const settings = {
-    dots: true,
-    infinite: savedRecipes?.data?.length > 3,
-    speed: 400,
-    slidesToShow: 3,
+  const settings = {
+    dots: false,
+    infinite: dishes.length > slidesToShowDesktop,
+    speed: 450,
+    slidesToShow: Math.min(slidesToShowDesktop, dishes.length || slidesToShowDesktop),
     slidesToScroll: 1,
     initialSlide: 0,
-    centerPadding: "8px",
     prevArrow: <PrevArrow />,
     nextArrow: <NextArrow />,
     responsive: [
       {
-        breakpoint: 1280, // below xl
+        breakpoint: 1280,
         settings: {
-          slidesToShow: 2,
-          slidesToScroll: 1,
+          slidesToShow: Math.min(slidesToShowTablet, dishes.length || slidesToShowTablet),
         },
       },
       {
-        breakpoint: 1024, // below lg
+        breakpoint: 768,
         settings: {
-          slidesToShow: 2,
-          slidesToScroll: 1,
+          slidesToShow: Math.min(slidesToShowTablet, dishes.length || slidesToShowTablet),
         },
       },
       {
-        breakpoint: 640, // below sm
+        breakpoint: 640,
         settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
+          slidesToShow: Math.min(slidesToShowMobile, dishes.length || slidesToShowMobile),
         },
       },
     ],
+    appendDots: (dots) => (
+      <div className="mt-4">
+        <ul className="flex gap-2 justify-center">{dots}</ul>
+      </div>
+    ),
+    customPaging: () => <button className="w-2 h-2 rounded-full bg-gray-300" />,
+    accessibility: true,
+    adaptiveHeight: false,
   };
 
   return (
-    <div >
-            {cards.length === 0 ? (
-              <div className="rounded-2xl p-6 border ">
-                <p className="text-gray-600">No saved recipes yet.</p>
-              </div>
-            ) : (
-              <div className="relative">
-                <Slider {...settings}>
-                  {cards.map((savedRecipe) => (
-                    <div
-                      key={savedRecipe._id}
-                      className="p-1 outline-none w-42"
-                      aria-hidden={false}
-                    >
-                      <div className="flex flex-col gap-2 p-2 border rounded-2xl h-full">
-                        <div className="h-30 w-full rounded-md overflow-hidden">
-                          <img
-                            className="w-full h-full object-cover cursor-pointer"
-                            src={savedRecipe?.image || recipeImg}
-                            alt={savedRecipe?.title || "Recipe"}
-                            onClick={() => handleRecipe(savedRecipe._id)}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <h3
-                            className="text-md font-semibold line-clamp-1 hover:text-[#4b4b4b] cursor-pointer duration-300"
-                            onClick={() => handleRecipe(savedRecipe._id)}
-                          >
-                            {savedRecipe?.title}
-                          </h3>
-                          <div className="mt-2 text-xs flex flex-wrap gap-1 items-center">
-                            <TimeTag
-                              metadata={savedRecipe?.metadata?.cookingTime}
-                            />
-                            <CalorieTag
-                              metadata={savedRecipe?.metadata?.calories}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </Slider>
-              </div>
-            )}
-          </div>
-  )
-}
+    <div className="relative">
+      {dishes.length === 0 ? (
+        <div className="rounded-2xl p-6 bg-[#cacaca]">
+          <p className="text-gray-600">No saved recipes yet.</p>
+        </div>
+      ) : (
+        <div className="relative">
+          <Slider {...settings}>
+            {dishes.map((dish) => (
+              <div key={dish.id} className="p-2">
+                <div className="relative flex flex-col gap-3 bg-[#08324a] rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                  <div className="w-full overflow-hidden">
+                    <div className="relative w-full h-44 sm:h-48 md:h-60 lg:h-52 rounded-b-none rounded-2xl overflow-hidden">
+                      <img
+                        onClick={() => getRecipeFromDb(dish.tag)}
+                        className="w-full h-full object-cover transform transition-transform duration-500 ease-out hover:scale-105 cursor-pointer"
+                        src={dish.img}
+                        alt={dish.name ?? "Recipe image"}
+                      />
 
-export default SliderCard
+                      <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 transition-opacity duration-500 hover:opacity-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="px-2 pb-4">
+                    <h3
+                      className="text-xl sm:text-2xl font-semibold text-zinc-900 dark:text-zinc-100 cursor-pointer hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors duration-200 line-clamp-1"
+                      title={dish.name}
+                      onClick={() => getRecipeFromDb(dish.tag)}
+                    >
+                      {dish.name}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </Slider>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SliderCard;

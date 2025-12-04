@@ -2,44 +2,44 @@ import React from "react";
 import { Timer } from "lucide-react";
 import calories from "../assets/Calories.png";
 
-const Tag = ({ metadata }) => {
+
+const baseClasses =
+  "inline-flex items-center gap-2 px-3 h-8 text-sm font-medium bg-[#e4e1e1] text-gray-800 rounded-full shadow-sm";
+
+
+export const Tag = ({ metadata }) => {
+  if (!metadata || metadata === "Any") return null;
+
+  return <span className={baseClasses}>{metadata}</span>;
+};
+
+
+export const TimeTag = ({ metadata }) => {
+  if (!metadata) return null;
+
   return (
-    <div>
-      {metadata!="Any"?<p className=" p-1 px-2 h-8 bg-[#b7b2b2] rounded-full">
-        {metadata}
-      </p>:null}
-    </div>
+    <span className={baseClasses}>
+      <Timer size={16} strokeWidth={2} />
+      {metadata} min
+    </span>
   );
 };
 
-const TimeTag = ({ metadata }) => {
-  return (
-    <div>
-      <p className=" py-1 px-2 h-8 bg-[#b7b2b2] rounded-full flex flex-row">
-        <Timer size={20} />{metadata} min
-      </p>
-    </div>
-  );
+
+export const PriceTag = ({ metadata }) => {
+  if (!metadata && metadata !== 0) return null;
+
+  return <span className={baseClasses}>₹ {metadata}</span>;
 };
 
-const PriceTag = ({ metadata }) => {
-  return (
-    <div>
-      <p className=" p-1 px-2 h-8  bg-[#b7b2b2] rounded-full flex flex-row">
-        Rs. {metadata}
-      </p>
-    </div>
-  );
-};
-const CalorieTag = ({ metadata }) => {
-  return (
-    <div>
-      <p className=" p-1  h-8  bg-[#b7b2b2] rounded-full flex flex-row">
-        <img className="h-5 w-5" src={calories} alt="" />
-        {Math.trunc(metadata)} kcal
-      </p>
-    </div>
-  );
-};
 
-export { Tag, TimeTag, PriceTag, CalorieTag };
+export const CalorieTag = ({ metadata }) => {
+  if (!metadata && metadata !== 0) return null;
+
+  return (
+    <span className={baseClasses}>
+      <img src={calories} alt="" className="h-4 w-4" />
+      {Math.trunc(metadata)} kcal
+    </span>
+  );
+};
