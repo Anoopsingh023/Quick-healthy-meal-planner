@@ -35,13 +35,15 @@ const ProfilePage = () => {
 
   return (
     <div className="flex flex-row gap-5">
-      <div className="flex-[4] flex flex-col gap-5">
+      <div className="flex-[5] flex flex-col gap-5">
         <ProfileHeader user={user} />
-        <AllergiesCard
-          allergies={user?.profile?.allergies || []}
-          onSave={(u) => setUser((prev) => ({ ...prev, ...u }))}
-        />
-        <div className="flex flex-col gap-4 w-2xl">
+        <div className="w-3xl">
+          <AllergiesCard
+            allergies={user?.profile?.allergies || []}
+            onSave={(u) => setUser((prev) => ({ ...prev, ...u }))}
+          />
+        </div>
+        <div className="flex flex-col gap-4 w-3xl">
           <h3 className="text-2xl md:text-2xl font-medium">Saved Recipes</h3>
           <SliderCard cards={savedRecipes?.data || []} />
         </div>
