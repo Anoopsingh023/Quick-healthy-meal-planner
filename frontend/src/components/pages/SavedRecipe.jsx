@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import useRecipe from "../../hooks/useRecipe";
 import RecipeCard from "../../shared/RecipeCard";
-import { Backpack } from "lucide-react";
 import BackButton from "../../shared/BackButton";
 
 const SavedRecipe = () => {
-  const { savedRecipes } = useRecipe();
+  const { savedRecipes,getSavedRecipes } = useRecipe();
+  useEffect(()=>{
+    getSavedRecipes()
+  },[])
 
   const cards = savedRecipes?.data || [];
   return (
@@ -17,13 +19,13 @@ const SavedRecipe = () => {
 
       <div className="w-full ">
         {cards.length === 0 ? (
-          <div className="rounded-2xl p-6 border ">
+          <div className="rounded-2xl p-6 bg-[#cacaca] shadow-md">
             <p className="text-gray-600">No saved recipes yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-3 gap-5">
             {cards.map((r, i) => (
-              <div key={r._id || r.id || i} className=" rounded-2xl shadow p-2">
+              <div key={r._id || r.id || i} >
                 <RecipeCard recipe={r} />
               </div>
             ))}
