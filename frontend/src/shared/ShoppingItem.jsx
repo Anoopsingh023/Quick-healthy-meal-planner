@@ -12,6 +12,8 @@ const ShoppingItem = ({
 
   useEffect(() => setQtyValue(item.quantity || ""), [item.quantity]);
 
+  const ingImage = `https://img.spoonacular.com/ingredients_100x100/${item.img}`
+
   return (
     <div
       className={`flex items-start gap-4 p-3 rounded-lg border ${
@@ -37,9 +39,12 @@ const ShoppingItem = ({
                 <Ingredients {...item} hideControls />
               </div>
             ) : (
-              <div>
+              <div className="flex flex-row gap-5">
+                <img className="h-20 w-20" src={ingImage} alt="" />
+                <div >
                 <div className="font-medium">{item.name}</div>
                 <div className="text-sm text-gray-500">{item.category}</div>
+                </div>
               </div>
             )}
           </div>
