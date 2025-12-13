@@ -13,7 +13,7 @@ import {
 import RecomendCard from "../../shared/RecomendCard";
 import logo from "../../assets/logo.jpg";
 import download from "../../assets/recipe/download.jpg";
-
+import Cusiene from "../../shared/Cusiene";
 
 const Home = () => {
   const items = ["veg", "Egg", "Potato", "Tomato"];
@@ -87,7 +87,7 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="bg-black p-15 text-white flex flex-row gap-4">
+      <div className="bg-black p-15 text-white flex flex-row justify-between gap-4">
         <div className="flex flex-col gap-4">
           <div className="flex flex-row gap-4 items-center">
             <Link to="/dashboard" className="flex items-center ">
@@ -106,6 +106,11 @@ const Home = () => {
         </div>
         <img className="h-50 w-80" src={download} alt="app image" />
       </div>
+
+      <div className="">
+        <Cusiene/>
+      </div>
+
     </div>
   );
 };
