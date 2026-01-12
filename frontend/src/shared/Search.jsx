@@ -458,7 +458,7 @@ const Search = ({ onSelect, onSubmit }) => {
   return (
     <div className="relative w-full max-w-2xl mt-6">
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
-        <div className="flex items-center bg-white rounded-full shadow-md border border-gray-200 focus-within:ring-2 focus-within:ring-green-400 transition-all duration-200 flex-1">
+        <div className="flex items-center bg-white rounded-full  shadow-md  focus-within:ring-2 focus-within:ring-green-400 transition-all duration-200 flex-1">
           <div className="relative flex-1">
             <input
               ref={inputRef}
@@ -500,10 +500,10 @@ const Search = ({ onSelect, onSubmit }) => {
           <button
             type="button"
             onClick={() => setFilterOpen((s) => !s)}
-            className={`px-4 py-2 rounded-full border flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-full shadow-md  flex items-center gap-2 ${
               filterOpen
-                ? "bg-green-50 border-green-300"
-                : "bg-white border-gray-200"
+                ? "bg-green-50"
+                : "bg-white "
             } text-sm`}
             aria-expanded={filterOpen}
             aria-controls="search-filter-panel"
@@ -521,7 +521,7 @@ const Search = ({ onSelect, onSubmit }) => {
             <div
               ref={filterPanelRef}
               id="search-filter-panel"
-              className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 z-[10001]"
+              className="absolute right-0 mt-2 w-96 bg-white rounded-2xl shadow-lg p-4 z-[10001]"
             >
               <div className="space-y-3">
                 {/* Cuisines multi-select chips */}
