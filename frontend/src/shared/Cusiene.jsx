@@ -7,7 +7,6 @@ const Cuisine = () => {
 
   const navigate = useNavigate()
   const cuisines = [
-  { id: 1, name: "Indian", tag: ["indian"] },
   { id: 2, name: "Italian", tag: ["italian"] },
   { id: 3, name: "Chinese", tag: ["chinese"] },
   { id: 4, name: "Mexican", tag: ["mexican"] },
@@ -51,7 +50,6 @@ const Cuisine = () => {
     const getRecipeFromDb = async (tagsArray) => {
     try {
       const tag = tagsArray.join(",");
-      // const isCuisine = tag.toLowerCase() === "indian";
       const params = {cuisine: tag} 
       const res = await axios.get(`${base_url}/recipes/db-search`, {
         params,
@@ -59,25 +57,19 @@ const Cuisine = () => {
           Authorization: "Bearer " + localStorage.getItem("token"),
         },
       });
-
-      // you can pass the query in the URL so the search page can re-run the query
       const queryString = new URLSearchParams(params).toString();
-
-      // If you'd rather pass data through state, use: navigate('/dashboard/search', { state: { results: res.data } })
       navigate(`/dashboard/db-search?${queryString}`);
 
-      // optional: log the returned data for debugging
       console.log("recipes from DB for", tag, res.data);
     } catch (error) {
       console.error("Error fetching recipes by dish:", error);
-      // optionally show a user-facing toast or notification here
     }
   };
 
   return (
     <div className="p-4">
       <h1 className="text-2xl md:text-3xl font-medium mb-4 ">
-        Food by Country
+        International Flavors
       </h1>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
