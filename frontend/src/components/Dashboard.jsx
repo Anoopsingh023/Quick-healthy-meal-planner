@@ -64,7 +64,7 @@ const Dashboard = () => {
           minHeight: "100vh",
         }}
       >
-        <div className="p-4 px-11 overflow-hidden scrollbar-hover">
+        <div className="pt-4 px-11 overflow-hidden scrollbar-hover">
           <Outlet />
         </div>
       </main>
