@@ -28,8 +28,8 @@ const recipeSchema = new mongoose.Schema({
     cookingTime: { type: Number, required: true }, // in minutes
     difficulty: {
       type: String,
-      enum: ["Easy", "Medium", "Hard"],
-      default: "Easy",
+      enum: ["Beginner", "Intermediate", "Expert"],
+      default: "Beginner",
     },
     cuisine: { type: String }, // "Indian", "Chinese", "Italian"
     dietType: {

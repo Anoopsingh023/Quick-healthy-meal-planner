@@ -5,16 +5,44 @@ import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.model.js";
 import axios from "axios";
+import { deleteImageFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 
 // Create Recipe (Manual)
+
 const createRecipe = asyncHandler(async (req, res) => {
-  const recipeData = req.body; // should match your schema
-  const recipe = new Recipe({ ...recipeData, createdBy: req.user?._id });
-  await recipe.save();
+  const { title, description } = req.body;
+
+  if (!title) {
+    throw new apiError(400, "Title is required");
+  }
+
+  // ✅ PARSE JSON FIELDS
+  const metadata = req.body.metadata ? JSON.parse(req.body.metadata) : {};
+
+  const ingredients = req.body.ingredients
+    ? JSON.parse(req.body.ingredients)
+    : [];
+
+  const steps = req.body.steps ? JSON.parse(req.body.steps) : [];
+  const tags = req.body.tags ? JSON.parse(req.body.tags) : []
+
+  if (!req.file) throw new apiError(400, "Recipe image is required");
+  const imageUrl = await uploadOnCloudinary(req.file.path);
+
+  const recipe = await Recipe.create({
+    title,
+    description,
+    ingredients,
+    steps,
+    metadata,
+    tags,
+    image: imageUrl.secure_url,
+    createdBy: req.user._id,
+  });
 
   res
     .status(201)
-    .json(new apiResponse(200, recipe, "Recipe created successfully"));
+    .json(new apiResponse(201, recipe, "Recipe created successfully"));
 });
 
 // Get User Recipes
@@ -54,25 +82,93 @@ const getRecipeById = asyncHandler(async (req, res) => {
 });
 
 // Update Recipe
-const updateRecipe = asyncHandler(async (req, res) => {
-  const recipe = await Recipe.findById(req.params.id);
+// const updateRecipe = asyncHandler(async (req, res) => {
+//   const recipe = await Recipe.findById(req.params.id);
 
+//   if (!recipe) {
+//     throw new apiError(404, "Recipe not found");
+//   }
+
+//   // Permission check: only creator can update
+//   if (recipe.createdBy.toString() !== req.user._id.toString()) {
+//     throw new apiError(403, "not authorized to update this recipe");
+//   }
+
+//   // Perform update
+//   Object.assign(recipe, req.body);
+//   await recipe.save();
+
+//   res
+//     .status(200)
+//     .json(new apiResponse(200, recipe, "Recipe updated successfully"));
+// });
+
+const updateRecipe = asyncHandler(async (req, res) => {
+  const recipeId = req.params.id;
+
+  const recipe = await Recipe.findById(recipeId);
   if (!recipe) {
     throw new apiError(404, "Recipe not found");
   }
 
-  // Permission check: only creator can update
+  // Permission check
   if (recipe.createdBy.toString() !== req.user._id.toString()) {
-    throw new apiError(403, "not authorized to update this recipe");
+    throw new apiError(403, "Not authorized to update this recipe");
   }
 
-  // Perform update
-  Object.assign(recipe, req.body);
+  /* -------------------- TEXT FIELDS (PATCH) -------------------- */
+  const {
+    title,
+    description,
+    ingredients,
+    steps,
+    metadata,
+    tags,
+  } = req.body;
+
+  if (title !== undefined) recipe.title = title;
+  if (description !== undefined) recipe.description = description;
+
+  if (Array.isArray(ingredients)) {
+    recipe.ingredients = ingredients;
+  }
+
+  if (Array.isArray(steps)) {
+    recipe.steps = steps.map((s, i) => ({
+      stepNumber: i + 1,
+      instruction: s.instruction,
+      time: s.time ? Number(s.time) : undefined,
+    }));
+  }
+
+  if (metadata) {
+    recipe.metadata = {
+      ...recipe.metadata,
+      ...metadata,
+    };
+  }
+
+  if (Array.isArray(tags)) {
+    recipe.tags = tags;
+  }
+
+  /* -------------------- IMAGE UPDATE -------------------- */
+  if (req.file) {
+    // 1️⃣ Delete old image (if exists)
+    if (recipe.image) {
+      await deleteImageFromCloudinary(recipe.image);
+    }
+
+    // 2️⃣ Upload new image
+    const uploaded = await uploadOnCloudinary(req.file.path);
+    recipe.image = uploaded.secure_url;
+  }
+
   await recipe.save();
 
-  res
-    .status(200)
-    .json(new apiResponse(200, recipe, "Recipe updated successfully"));
+  res.status(200).json(
+    new apiResponse(200, recipe, "Recipe updated successfully")
+  );
 });
 
 // Delete Recipe
@@ -87,6 +183,7 @@ const deleteRecipe = asyncHandler(async (req, res) => {
   if (recipe.createdBy.toString() !== req.user._id.toString()) {
     throw new apiError(403, "not authorized to delete this recipe");
   }
+  deleteImageFromCloudinary(recipe.image)
 
   await recipe.deleteOne();
 
@@ -129,7 +226,10 @@ const searchRecipes = asyncHandler(async (req, res) => {
 
   // Cuisine(s)
   if (cuisine) {
-    const cuisines = cuisine.split(",").map((c) => c.trim()).filter(Boolean);
+    const cuisines = cuisine
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
     if (cuisines.length) {
       filter.$or = filter.$or || [];
       filter.$or.push(
@@ -147,7 +247,10 @@ const searchRecipes = asyncHandler(async (req, res) => {
 
   // Difficulty
   if (difficulty) {
-    const diffs = difficulty.split(",").map((d) => d.trim()).filter(Boolean);
+    const diffs = difficulty
+      .split(",")
+      .map((d) => d.trim())
+      .filter(Boolean);
     if (diffs.length) filter["metadata.difficulty"] = { $in: diffs };
   }
 
@@ -172,7 +275,10 @@ const searchRecipes = asyncHandler(async (req, res) => {
 
   // Ensure we have ingredients & steps (optional but usually desired)
   filter.$and = filter.$and || [];
-  filter.$and.push({ "ingredients.0": { $exists: true } }, { "steps.0": { $exists: true } });
+  filter.$and.push(
+    { "ingredients.0": { $exists: true } },
+    { "steps.0": { $exists: true } }
+  );
 
   // Sorting
   let sortObj = { createdAt: -1 };
@@ -209,7 +315,9 @@ const searchRecipes = asyncHandler(async (req, res) => {
   // 2) If DB empty -> query Spoonacular (complexSearch for IDs), then fetch details and save
   const apiKey = process.env.SPOONACULAR_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ success: false, message: "Spoonacular API key not configured" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Spoonacular API key not configured" });
   }
 
   // Build spoonacular complexSearch query params
@@ -240,13 +348,23 @@ const searchRecipes = asyncHandler(async (req, res) => {
   try {
     searchRes = await axios.get(searchUrl);
   } catch (err) {
-    console.error("Spoonacular complexSearch error:", err?.response?.data || err.message);
-    return res.status(502).json({ success: false, message: "Error fetching from Spoonacular" });
+    console.error(
+      "Spoonacular complexSearch error:",
+      err?.response?.data || err.message
+    );
+    return res
+      .status(502)
+      .json({ success: false, message: "Error fetching from Spoonacular" });
   }
 
   const results = searchRes.data?.results || [];
   if (!results.length) {
-    return res.status(404).json({ success: false, message: "No recipes found (DB or Spoonacular)" });
+    return res
+      .status(404)
+      .json({
+        success: false,
+        message: "No recipes found (DB or Spoonacular)",
+      });
   }
 
   // For each result, fetch detailed information and save (or reuse if already present)
@@ -275,7 +393,10 @@ const searchRecipes = asyncHandler(async (req, res) => {
       await newRecipe.save();
       savedRecipes.push(newRecipe);
     } catch (err) {
-      console.error(`Failed to fetch/save recipe id=${r.id}:`, err?.response?.data || err.message);
+      console.error(
+        `Failed to fetch/save recipe id=${r.id}:`,
+        err?.response?.data || err.message
+      );
       // continue to next recipe instead of failing entire flow
     }
   }
@@ -303,7 +424,9 @@ const searchRecipes = asyncHandler(async (req, res) => {
 const getRecommendedRecipe = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   if (!userId) {
-    return res.status(401).json({ success: false, message: "Not authenticated" });
+    return res
+      .status(401)
+      .json({ success: false, message: "Not authenticated" });
   }
 
   // 1) Load user preferences
@@ -355,14 +478,17 @@ const getRecommendedRecipe = asyncHandler(async (req, res) => {
   // Difficulty filter (based on cookingSkill)
   if (cookingSkill) {
     const allowedDifficulties = difficultyMap[cookingSkill] || [];
-    if (allowedDifficulties.length) filter["metadata.difficulty"] = { $in: allowedDifficulties };
+    if (allowedDifficulties.length)
+      filter["metadata.difficulty"] = { $in: allowedDifficulties };
   }
 
   // Budget filter (costEstimate is in your schema)
   if (budget && (budget.min !== undefined || budget.max !== undefined)) {
     filter["metadata.costEstimate"] = {};
-    if (typeof budget.min === "number") filter["metadata.costEstimate"].$gte = budget.min;
-    if (typeof budget.max === "number") filter["metadata.costEstimate"].$lte = budget.max;
+    if (typeof budget.min === "number")
+      filter["metadata.costEstimate"].$gte = budget.min;
+    if (typeof budget.max === "number")
+      filter["metadata.costEstimate"].$lte = budget.max;
     // Remove empty object if neither bound present
     if (Object.keys(filter["metadata.costEstimate"]).length === 0) {
       delete filter["metadata.costEstimate"];
@@ -382,7 +508,10 @@ const getRecommendedRecipe = asyncHandler(async (req, res) => {
   // Avoid returning recipes that are partial or empty? (Optional)
   // Example: ensure there is at least one ingredient and one step
   filter.$and = filter.$and || [];
-  filter.$and.push({ "ingredients.0": { $exists: true } }, { "steps.0": { $exists: true } });
+  filter.$and.push(
+    { "ingredients.0": { $exists: true } },
+    { "steps.0": { $exists: true } }
+  );
 
   // 2) Try to get one random recipe matching the strict filter
   let recipeDoc = null;
@@ -407,7 +536,10 @@ const getRecommendedRecipe = asyncHandler(async (req, res) => {
     delete relaxed1["metadata.difficulty"];
     delete relaxed1.$or; // remove cuisine constraint
     try {
-      const agg1 = await Recipe.aggregate([{ $match: relaxed1 }, { $sample: { size: 1 } }]);
+      const agg1 = await Recipe.aggregate([
+        { $match: relaxed1 },
+        { $sample: { size: 1 } },
+      ]);
       if (agg1 && agg1.length) recipeDoc = agg1[0];
     } catch (err) {
       console.error("Relaxed1 aggregation error:", err);
@@ -421,11 +553,18 @@ const getRecommendedRecipe = asyncHandler(async (req, res) => {
       const allowed = dietMap[profileDiet] || [profileDiet];
       if (allowed.length) relaxed2["metadata.dietType"] = { $in: allowed };
     }
-    if (allergyRegexes.length) relaxed2.$nor = [{ "ingredients.name": { $in: allergyRegexes } }];
-    relaxed2.$and = [{ "ingredients.0": { $exists: true } }, { "steps.0": { $exists: true } }];
+    if (allergyRegexes.length)
+      relaxed2.$nor = [{ "ingredients.name": { $in: allergyRegexes } }];
+    relaxed2.$and = [
+      { "ingredients.0": { $exists: true } },
+      { "steps.0": { $exists: true } },
+    ];
 
     try {
-      const agg2 = await Recipe.aggregate([{ $match: relaxed2 }, { $sample: { size: 1 } }]);
+      const agg2 = await Recipe.aggregate([
+        { $match: relaxed2 },
+        { $sample: { size: 1 } },
+      ]);
       if (agg2 && agg2.length) recipeDoc = agg2[0];
     } catch (err) {
       console.error("Relaxed2 aggregation error:", err);
@@ -439,11 +578,16 @@ const getRecommendedRecipe = asyncHandler(async (req, res) => {
   }
 
   if (!recipeDoc) {
-    return res.status(404).json({ success: false, message: "No recipes available" });
+    return res
+      .status(404)
+      .json({ success: false, message: "No recipes available" });
   }
 
   // 4) Convert aggregated doc to a populated document (to include createdBy fields)
-  const populated = await Recipe.findById(recipeDoc._id).populate("createdBy", "userName email avatar");
+  const populated = await Recipe.findById(recipeDoc._id).populate(
+    "createdBy",
+    "userName email avatar"
+  );
 
   res.status(200).json({
     success: true,
@@ -460,7 +604,6 @@ const getRecommendedRecipe = asyncHandler(async (req, res) => {
     },
   });
 });
-
 
 export {
   createRecipe,
