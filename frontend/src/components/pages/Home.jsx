@@ -14,6 +14,8 @@ import RecomendCard from "../../shared/RecomendCard";
 import logo from "../../assets/logo.jpg";
 import download from "../../assets/recipe/download.jpg";
 import Cusiene from "../../shared/Cusiene";
+import Footer from "./Footer";
+import IndianCusiene from "../../shared/IndianCusiene";
 
 const Home = () => {
   const items = ["veg", "Egg", "Potato", "Tomato"];
@@ -28,7 +30,7 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="flex flex-col sm:flex-col gap-6 pb-40">
+    <div className="flex flex-col sm:flex-col gap-6 ">
       <div className=" flex flex-row justify-between gap-6">
         <div className="flex-[3] flex flex-col">
           <h1 className="font-bold text-4xl md:text-6xl lg:text-7xl leading-tight">
@@ -87,7 +89,7 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="bg-black p-15 text-white flex flex-row justify-between gap-4">
+      <div className="bg-black p-15 text-white flex flex-row justify-between gap-4 -mx-11">
         <div className="flex flex-col gap-4">
           <div className="flex flex-row gap-4 items-center">
             <Link to="/dashboard" className="flex items-center ">
@@ -104,11 +106,19 @@ const Home = () => {
             Cooking is at once child's play and adult joy.
           </p>
         </div>
-        <img className="h-50 w-80" src={download} alt="app image" />
+        <img className="h-70 w-2xl -m-15 pr-15" src={download} alt="app image" />
       </div>
 
+      {/* <div className="">
+        <IndianCusiene/>
+      </div> */}
+      
       <div className="">
         <Cusiene/>
+      </div>
+
+      <div className="bg-[#eaeaea] p-5 -mx-11">
+        <Footer/>
       </div>
 
     </div>

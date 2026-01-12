@@ -1,6 +1,7 @@
 import React from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.jpg";
+import { GiMeal } from "react-icons/gi";
 
 const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
@@ -9,9 +10,9 @@ const Sidebar = ({ isCollapsed }) => {
 
   const navLinks = [
     { to: "/dashboard", icon: "fa-house", label: "Home" },
-    { to: "/dashboard/saved-recipe", icon: "fa-bolt", label: "Recipe" },
-    { to: "/dashboard/shopping-bag", icon: "fa-tv", label: "Shopping List" },
-    { to: "/dashboard/about", icon: "fa-circle-info", label: "About" },
+    { to: "/dashboard/saved-recipe", icon: "fa-bowl-food", label: "Recipe" },
+    { to: "/dashboard/shopping-bag", icon: "fa-cart-shopping", label: "Shopping List" },
+    { to: "/dashboard/user-recipe", icon: "fa-bread-slice", label: "Your Recipe" },
   ];
 
   const renderLinks = (links) =>
@@ -61,6 +62,7 @@ const Sidebar = ({ isCollapsed }) => {
       <div className={`px-1 pt-4 flex-1 overflow-auto space-y-1`}>
         {renderLinks(navLinks)}
       </div>
+      {/* <div><GiMeal /></div> */}
 
       {/* Footer (small profile / version) */}
       <div className="px-4 py-4 border-t border-[#08324a]">
