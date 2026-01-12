@@ -13,6 +13,7 @@ import {
   ProfilePage
 } from "./components/pages/index";
 import DbSearch from "./components/pages/DbSearch";
+import UserRecipeManager from "./components/user/UserRecipeManager";
 
 const appRouter = createBrowserRouter([
   {
@@ -38,6 +39,7 @@ const appRouter = createBrowserRouter([
       { path: "db-search", element: <DbSearch /> },
       { path: "saved-recipe", element: <SavedRecipe /> },
       { path: "user-profile", element: <ProfilePage /> },
+      { path: "user-Recipe", element: <UserRecipeManager /> },
     ],
   },
 ]);
