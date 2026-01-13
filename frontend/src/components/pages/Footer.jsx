@@ -19,7 +19,7 @@ const Footer = () => {
             </Link>
             <h2 className="font-bold text-2xl text-[#0b7b2a] ">Cooklio</h2>
           </div>
-          <p>&copy; 2025 Cooklio</p>
+          <p>&copy; 2026 Cooklio</p>
         </div>
         <div className="flex flex-col gap-4 cursor-pointer">
           <h3 className="text-xl text-black font-semibold cursor-text">Company</h3>
@@ -50,7 +50,7 @@ const Footer = () => {
       </div>
       <hr />
       <div className="flex flex-row justify-center items-center gap-10 text-[#2c2c2c] font-semibold">
-        <h4>For better experience, download the Cookly app now</h4>
+        <h4>For better experience, download the Cooklio app now</h4>
         <div className="flex flex-row gap-4">
           <img src={appleStore} alt="apple-store-icon" />
           <img src={playStore} alt="play-store-icon" />
