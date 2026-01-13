@@ -17,15 +17,15 @@ const Footer = () => {
                 className={`rounded-xl object-cover h-10 w-10 `}
               />
             </Link>
-            <h2 className="font-bold text-2xl text-[#0b7b2a] ">Cookly</h2>
+            <h2 className="font-bold text-2xl text-[#0b7b2a] ">Cooklio</h2>
           </div>
-          <p>&copy; 2025 Cookly</p>
+          <p>&copy; 2025 Cooklio</p>
         </div>
         <div className="flex flex-col gap-4 cursor-pointer">
           <h3 className="text-xl text-black font-semibold cursor-text">Company</h3>
           <span className="text-[#2c2c2c] font-semibold">About</span>
           <span>Team</span>
-          <span>Cookly Click</span>
+          <span>Cooklio Click</span>
         </div>
         <div className="flex flex-col gap-4 cursor-pointer">
           <h3 className="text-xl font-semibold text-black cursor-text">Contact us</h3>

@@ -16,17 +16,23 @@ import download from "../../assets/recipe/download.jpg";
 import Cusiene from "../../shared/Cusiene";
 import Footer from "./Footer";
 import IndianCusiene from "../../shared/IndianCusiene";
+import { useState } from "react";
 
 const Home = () => {
   const items = ["veg", "Egg", "Potato", "Tomato"];
   const { recipe, savedRecipes, getSavedRecipes, getRandomRecipe } =
     useRecipe();
   const { shoppingList, getShoppingList } = useShoppingList();
+  const [isloged, setIsLoged] = useState(false);
 
   useEffect(() => {
     // getSavedRecipes();
     getRandomRecipe();
     getShoppingList();
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsLoged(true);
+    }
   }, []);
 
   return (
@@ -60,7 +66,7 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="flex flex-row gap-5 mt-5">
+      {isloged?<div className="flex flex-row gap-5 mt-5">
         <div className="flex-[3] flex flex-col gap-4">
           <div className="flex flex-row justify-between items-center">
             <h2 className="text-2xl md:text-3xl font-medium ">Shopping List</h2>
@@ -87,7 +93,7 @@ const Home = () => {
         <div className="flex-[2]">
           <BadgesCard />
         </div>
-      </div>
+      </div>:null}
 
       <div className="bg-black p-15 text-white flex flex-row justify-between gap-4 -mx-11">
         <div className="flex flex-col gap-4">
@@ -99,9 +105,9 @@ const Home = () => {
                 className={`rounded-xl object-cover h-10 w-10 `}
               />
             </Link>
-            <h2 className="font-bold text-2xl text-[#0b7b2a] ">Cookly</h2>
+            <h2 className="font-bold text-2xl text-[#0b7b2a] ">Cooklio</h2>
           </div>
-          <h5 className="text-5xl font-medium">Get the Cookly App Now!</h5>
+          <h5 className="text-5xl font-medium">Get the Cooklio App Now!</h5>
           <p className="text-[#9c9c9c] font-medium">
             Cooking is at once child's play and adult joy.
           </p>
