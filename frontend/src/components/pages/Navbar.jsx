@@ -76,7 +76,7 @@ const Navbar = ({ onSearch, onToggleSidebar, isSidebarCollapsed }) => {
 
             {/* Show app name in navbar ONLY when sidebar is collapsed */}
             {/* {isSidebarCollapsed && ( */}
-              <h2 className="font-bold ml-15 text-3xl text-[#0b7b2a] ">Cookly</h2>
+              <h2 className="font-bold ml-15 text-3xl text-[#0b7b2a] ">Cooklio</h2>
             {/* )} */}
           </div>
 
