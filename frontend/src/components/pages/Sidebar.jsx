@@ -2,11 +2,14 @@ import React from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.jpg";
 import { GiMeal } from "react-icons/gi";
+import { useEffect } from "react";
+import { useState } from "react";
 
 const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const username = localStorage.getItem("username") || "You";
+  const [isloged, setIsLoged] = useState(false);
 
   const navLinks = [
     { to: "/dashboard", icon: "fa-house", label: "Home" },
@@ -14,6 +17,13 @@ const Sidebar = ({ isCollapsed }) => {
     { to: "/dashboard/shopping-bag", icon: "fa-cart-shopping", label: "Shopping List" },
     { to: "/dashboard/user-recipe", icon: "fa-bread-slice", label: "Your Recipe" },
   ];
+
+  useEffect(()=>{
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsLoged(true);
+    }
+  },[])
 
   const renderLinks = (links) =>
     links.map(({ to, icon, label }) => (
@@ -65,7 +75,7 @@ const Sidebar = ({ isCollapsed }) => {
       {/* <div><GiMeal /></div> */}
 
       {/* Footer (small profile / version) */}
-      <div className="px-4 py-4 border-t border-[#08324a]">
+      {isloged?<div className="px-4 py-4 border-t border-[#08324a]">
         <div className="flex justify-center">
             {/* only a small avatar when collapsed */}
             <img
@@ -108,7 +118,7 @@ const Sidebar = ({ isCollapsed }) => {
             />
           </div>
         )} */}
-      </div>
+      </div>:null}
     </div>
   );
 };
