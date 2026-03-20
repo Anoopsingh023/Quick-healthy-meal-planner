@@ -1,27 +1,8 @@
 import { Recipe } from "../models/recipe.model.js";
 
-/**
- * Local uploaded model file path (tooling will transform this into a URL).
- * Path provided in conversation history: sandbox:/mnt/data/recipe.model.js
- */
+
 const uploadedModelPath = "sandbox:/mnt/data/recipe.model.js";
 
-/**
- * GET /api/recipes/db-search
- * Query params supported:
- * - q               : full text / title/description search (string)
- * - cuisine         : comma separated list, e.g. "Indian,Italian"
- * - dietType        : single value, e.g. "Veg"
- * - foodType        : comma separated list, e.g. "Pizza,Salad" (will search metadata.foodType, tags, and FALLBACK to title/description if metadata.foodType is not present)
- * - tags            : comma separated list, e.g. "Quick,Budget"
- * - includeIngredients : comma separated list of ingredient names (must include all)
- * - excludeIngredients : comma separated list of ingredient names (must exclude any)
- * - maxCookingTime  : number (minutes)
- * - difficulty      : "Easy"|"Medium"|"Hard"
- * - page            : page number (default 1)
- * - limit           : page size (default 12)
- * - sort            : "latest"|"oldest"|"timeAsc"|"timeDesc"|"caloriesAsc"|"caloriesDesc"
- */
 export const dbSearchRecipes = async (req, res) => {
   try {
     const {
