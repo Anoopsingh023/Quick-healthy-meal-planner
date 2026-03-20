@@ -21,7 +21,8 @@ import userRouter from "./routes/user.route.js"
 import recipeRouter from "./routes/recipe.route.js"
 import shopinglistRouter from "./routes/shopinglist.route.js"
 import gamificationRouter from "./routes/gamification.route.js"
-import likeRouter from "./routes/like.route.js"
+import likeRouter from "./routes/PostRoutes/like.route.js"
+import postRouter from "./routes/PostRoutes/image.route.js"
 
 
 app.use("/api/v1/users", userRouter)
@@ -29,6 +30,7 @@ app.use("/api/v1/recipes", recipeRouter)
 app.use("/api/v1/shopinglists", shopinglistRouter)
 app.use("/api/v1/gamifications", gamificationRouter)
 app.use("/api/v1/likes", likeRouter)
+app.use("/api/v1/posts", postRouter)
 
 
 

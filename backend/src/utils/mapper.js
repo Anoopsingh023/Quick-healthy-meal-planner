@@ -22,7 +22,7 @@ export function mapSpoonacularToRecipe(spoonacularData) {
       : [],
     metadata: {
       cookingTime: spoonacularData.readyInMinutes || 0,
-      difficulty: "Easy", // Spoonacular doesn’t provide difficulty
+      difficulty: "Beginner", // Spoonacular doesn’t provide difficulty
       cuisine: spoonacularData.cuisines?.[0] || "Any",
       dietType: spoonacularData.vegetarian
         ? "Veg"

@@ -1,8 +1,9 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { apiError } from "../utils/apiError.js";
-import { apiResponse } from "../utils/apiResponse.js";
-import { Like } from "../models/like.model.js";
-import { Recipe } from "../models/recipe.model.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import { apiError } from "../../utils/apiError.js";
+import { apiResponse } from "../../utils/apiResponse.js";
+import { Like } from "../../models/PostModels/like.model.js";
+import { Recipe } from "../../models/recipe.model.js";
+// import { Recipe } from "../../models/recipe.model.js";
 // import { User } from "../models/user.model";
 
 const toggleRecipeLike = asyncHandler(async (req, res) => {
