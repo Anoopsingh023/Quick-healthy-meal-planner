@@ -16,6 +16,9 @@ const Sidebar = ({ isCollapsed }) => {
     { to: "/dashboard/saved-recipe", icon: "fa-bowl-food", label: "Recipe" },
     { to: "/dashboard/shopping-bag", icon: "fa-cart-shopping", label: "Shopping List" },
     { to: "/dashboard/user-recipe", icon: "fa-bread-slice", label: "Your Recipe" },
+    { to: "/dashboard/cook-insta", icon: "fa-brands fa-odnoklassniki", label: "Cook insta" },
+    // <i class="fa-brands fa-odnoklassniki"></i>
+    
   ];
 
   useEffect(()=>{
