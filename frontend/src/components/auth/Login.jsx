@@ -45,7 +45,7 @@ function Login() {
         {/* Logo and Title */}
         <div className="flex gap-3 justify-center items-center">
           <img className="w-16 h-10 rounded-lg" src={logo} alt="logo" />
-          <h2 className="text-3xl font-semibold text-white">Login</h2>
+          <h2 id="login-text" className="text-3xl font-semibold text-white">Login</h2>
         </div>
 
         {/* Form */}
@@ -53,6 +53,7 @@ function Login() {
           <input
             className="bg-amber-50 rounded-lg placeholder:text-slate-400 text-slate-700 px-4 py-2 w-full shadow-md focus:outline-none focus:ring-2 focus:ring-red-500"
             type="email"
+            id="user-email"
             placeholder="Email"
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -64,6 +65,7 @@ function Login() {
               className="bg-amber-50 rounded-lg placeholder:text-slate-400 text-slate-700 px-5 w-full h-10 shadow-xl pr-10"
               type={showPassword ? "text" : "password"} // 👈 Toggle here
               placeholder="Password"
+              id="user-password"
               onChange={(e) => setPassword(e.target.value)}
               required
             />
@@ -79,6 +81,7 @@ function Login() {
           <button
             className="bg-red-600 hover:bg-red-700 transition-all rounded-lg py-2 text-white font-medium shadow-lg flex items-center justify-center gap-2 cursor-pointer"
             type="submit"
+            id="login-button"
           >
             {isLoading && <i className="fa-solid fa-spinner fa-spin-pulse"></i>}
             Submit

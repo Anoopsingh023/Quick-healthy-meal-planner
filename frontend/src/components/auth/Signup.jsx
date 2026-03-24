@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 // import { toast } from "react-toastify";
-// import { base_url } from "../utils/constant";
 import { base_url } from "../../utils/constant";
 import logo from "../../assets/logo.jpg";
 
@@ -11,10 +10,9 @@ function Signup() {
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNo, setPhoneNo] = useState("")
   const [avatar, setAvatar] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [coverImage, setCoverImage] = useState(null);
-  const [coverImageUrl, setCoverImageUrl] = useState("");
   const [isLoading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -23,32 +21,30 @@ function Signup() {
     setAvatarUrl(URL.createObjectURL(e.target.files[0]));
   };
 
-  const coverImageFileHandler = (e) => {
-    setCoverImage(e.target.files[0]);
-    setCoverImageUrl(URL.createObjectURL(e.target.files[0]));
-  };
-
   const navigate = useNavigate();
 
   const submitHandler = (e) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData();
-    formData.append("username", username);
+    formData.append("userName", username);
     formData.append("fullName", fullName);
     formData.append("email", email);
+    formData.append("phoneNo", phoneNo)
     formData.append("password", password);
     formData.append("avatar", avatar);
-    formData.append("coverImage", coverImage);
+    // formData.append("coverImage", coverImage);
 
     axios
-      .post(`${base_url}/api/v1/users/register`, formData)
+      .post(`${base_url}/users/register`, formData)
       .then((res) => {
+        console.log("Signup",res.data)
         setLoading(false);
         navigate("/login");
         // toast("Account created Successfully");
       })
       .catch((error) => {
+        console.error("Signup error",error)
         setLoading(false);
         // toast.error(error.response?.statusText || "Something went wrong");
       });
@@ -61,7 +57,7 @@ function Signup() {
         {/* Logo and title */}
         <div className="flex gap-3 justify-center items-center">
           <img className="w-16 h-10 rounded-lg" src={logo} alt="logo" />
-          <h2 className="text-2xl md:text-3xl text-white font-semibold">My YouTube</h2>
+          <h2 className="text-2xl md:text-3xl text-white font-semibold">Signup</h2>
         </div>
 
         {/* Form */}
@@ -72,6 +68,7 @@ function Signup() {
           <input
             className="bg-amber-50 rounded-lg placeholder:text-slate-400 text-slate-700 px-4 py-2 w-full shadow-md focus:outline-none focus:ring-2 focus:ring-red-500"
             type="text"
+            id="user-name"
             placeholder="Username"
             onChange={(e) => setUsername(e.target.value)}
             required
@@ -80,6 +77,7 @@ function Signup() {
           <input
             className="bg-amber-50 rounded-lg placeholder:text-slate-400 text-slate-700 px-4 py-2 w-full shadow-md focus:outline-none focus:ring-2 focus:ring-red-500"
             type="text"
+            id="full-name"
             placeholder="Full Name"
             onChange={(e) => setFullName(e.target.value)}
             required
@@ -87,9 +85,19 @@ function Signup() {
 
           <input
             className="bg-amber-50 rounded-lg placeholder:text-slate-400 text-slate-700 px-4 py-2 w-full shadow-md focus:outline-none focus:ring-2 focus:ring-red-500"
+            id="user-email"
             type="email"
             placeholder="Email"
             onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <input
+            className="bg-amber-50 rounded-lg placeholder:text-slate-400 text-slate-700 px-4 py-2 w-full shadow-md focus:outline-none focus:ring-2 focus:ring-red-500"
+            type="text"
+            id="phone-number"
+            placeholder="Mobile Number"
+            onChange={(e) => setPhoneNo(e.target.value)}
             required
           />
 
@@ -99,6 +107,7 @@ function Signup() {
               className="bg-amber-50 rounded-lg placeholder:text-slate-400 text-slate-700 px-5 w-full h-10 shadow-xl pr-10"
               type={showPassword ? "text" : "password"} // 👈 Toggle here
               placeholder="Password"
+              id="user-password"
               onChange={(e) => setPassword(e.target.value)}
               required
             />
@@ -129,27 +138,12 @@ function Signup() {
             )}
           </div>
 
-          {/* Cover Image Upload */}
-          <div className="flex items-center gap-3 text-white">
-            <label htmlFor="coverImage" className="cursor-pointer text-sm font-medium">
-              Cover Image
-            </label>
-            <input
-              id="coverImage"
-              accept="image/*"
-              type="file"
-              className="hidden"
-              onChange={coverImageFileHandler}
-            />
-            {coverImageUrl && (
-              <img src={coverImageUrl} alt="Cover" className="w-12 h-12 rounded object-cover shadow-md" />
-            )}
-          </div>
 
           {/* Submit button */}
           <button
             className="bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 mt-2 w-full shadow-md font-medium transition-all duration-200 cursor-pointer"
             type="submit"
+            id="signup"
           >
             {isLoading && (
               <i className="fa-solid fa-spinner fa-spin-pulse mr-2"></i>
