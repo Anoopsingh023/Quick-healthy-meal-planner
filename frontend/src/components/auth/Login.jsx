@@ -45,7 +45,9 @@ function Login() {
         {/* Logo and Title */}
         <div className="flex gap-3 justify-center items-center">
           <img className="w-16 h-10 rounded-lg" src={logo} alt="logo" />
-          <h2 id="login-text" className="text-3xl font-semibold text-white">Login</h2>
+          <h2 id="login-text" className="text-3xl font-semibold text-white">
+            Login
+          </h2>
         </div>
 
         {/* Form */}
@@ -99,6 +101,20 @@ function Login() {
           >
             Guest Mode
           </Link>
+
+          <div className="flex flex-col gap-3 text-white">
+            <p className="text-2xl">For testing</p>
+            <div>
+              <div className="flex flex-row gap-1">
+                <h2 className="font-medium">Email:</h2>
+                <span>ironman123@gmail.com</span>
+              </div>
+              <div className="flex flex-row gap-1">
+                <h3 className="font-medium">Password:</h3>
+                <span>ironman123</span>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
     </div>
