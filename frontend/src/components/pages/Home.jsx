@@ -39,8 +39,9 @@ const Home = () => {
     <div className="flex flex-col sm:flex-col gap-6 ">
       <div className=" flex flex-row justify-between gap-6">
         <div className="flex-[3] flex flex-col">
-          <h1 className="font-bold text-4xl md:text-6xl lg:text-7xl leading-tight">
-            Cook Smart,
+          <h1 className="font-bold text-4xl md:text-6xl lg:text-7xl leading-tight" >
+           <span id="heading" 
+           > Cook Smart,</span>
             <br /> Eat Healthy.
           </h1>
           <Search />
