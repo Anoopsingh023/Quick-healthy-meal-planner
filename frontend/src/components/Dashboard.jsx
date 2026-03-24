@@ -70,7 +70,7 @@ const Dashboard = () => {
       </main>
 
       {/* Bottom Navigation for Mobile */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-[#0f0f0f] border-t border-gray-800 flex justify-around items-center py-2 z-40">
+      {/* <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-[#0f0f0f] border-t border-gray-800 flex justify-around items-center py-2 z-40">
         <button
           onClick={() => navigate("/dashboard")}
           className="flex flex-col items-center text-gray-300 hover:text-white"
@@ -105,7 +105,7 @@ const Dashboard = () => {
           <CircleUser size={22} />
           <span className="text-xs">You</span>
         </button>
-      </nav>
+      </nav> */}
     </div>
   );
 };
