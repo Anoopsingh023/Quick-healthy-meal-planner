@@ -108,7 +108,7 @@ export const getFeed = asyncHandler(async (req, res) => {
             },
           },
           { $sort: { createdAt: -1 } },
-          { $limit: 2 },
+          // { $limit: 2 },
 
           {
             $lookup: {
