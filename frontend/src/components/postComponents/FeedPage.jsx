@@ -31,7 +31,7 @@ const PostSkeleton = () => {
 };
 
 const FeedPage = () => {
-  const [posts, setPosts] = useState([]);
+  const [content, setContent] = useState();
   const [feeds, setFeeds] = useState([]);
   const [likedPosts, setLikedPosts] = useState({});
   const [selectedPost, setSelectedPost] = useState(null);
@@ -41,56 +41,57 @@ const FeedPage = () => {
   const [loading, setLoading] = useState(false);
 
   const handlePostLike = async (postId) => {
-  if (loading) return;
+    if (loading) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const res = await toggleLikeApi({
-      targetId: postId,
-      targetType: "Image",
-    });
-    console.log("toggle Like",res);
-    fetchFeed()
-  } catch (err) {
-    console.log(err);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const res = await toggleLikeApi({
+        targetId: postId,
+        targetType: "Image",
+      });
+      console.log("toggle Like", res);
+      fetchFeed();
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCommentLike = async (postId) => {
-  if (loading) return;
+    if (loading) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const res = await toggleLikeApi({
-      targetId: postId,
-      targetType: "Comment",
-    });
-    console.log("toggle Comment Like",res);
-    fetchFeed()
-  } catch (err) {
-    console.log(err);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const res = await toggleLikeApi({
+        targetId: postId,
+        targetType: "Comment",
+      });
+      console.log("toggle Comment Like", res);
+      fetchFeed();
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDoubleClick = async (postId, isliked) => {
-  // show animation
-  setShowHeart(postId);
+    // show animation
+    setShowHeart(postId);
 
-  setTimeout(() => {
-    setShowHeart(null);
-  }, 800);
-  console.log("dobble click", postId)
+    setTimeout(() => {
+      setShowHeart(null);
+    }, 800);
+    console.log("dobble click", postId);
 
-  // auto like if not liked
-  if(!isliked){
-    handlePostLike(postId)
-  }
-};
+    // auto like if not liked
+    if (!isliked) {
+      handlePostLike(postId);
+    }
+  };
 
   const fetchFeed = async () => {
     try {
@@ -105,6 +106,21 @@ const FeedPage = () => {
       console.error("Feed errer", error);
     }
   };
+
+  const createComment = async(imagePost)=>{
+    try {
+      const res = await axios.post(`${base_url}/comments/`,{imagePost,content},{
+        headers: {
+          Authorization: "Bearer "+ localStorage.getItem("token")
+        }
+      })
+      console.log("Create comment",res.data)
+      fetchFeed()
+    } catch (error) {
+      console.error("Error create comment", error)
+    }
+  }
+  
 
   useEffect(() => {
     fetchFeed();
@@ -181,7 +197,9 @@ const FeedPage = () => {
                 {/* Image */}
                 <div
                   className="w-full rounded-lg overflow-hidden relative cursor-pointer"
-                  onDoubleClick={() => handleDoubleClick(feed._id, feed.isLiked)}
+                  onDoubleClick={() =>
+                    handleDoubleClick(feed._id, feed.isLiked)
+                  }
                 >
                   <img
                     className="w-full max-h-[500px] object-cover"
@@ -190,7 +208,7 @@ const FeedPage = () => {
                   />
 
                   {/* Heart Animation */}
-                  {showHeart  === feed._id && (
+                  {showHeart === feed._id && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <i className="fa-solid fa-heart text-red-500 text-6xl animate-ping"></i>
                     </div>
@@ -202,7 +220,7 @@ const FeedPage = () => {
                   <div className="flex flex-row gap-4">
                     <span
                       className="cursor-pointer transition"
-                      onClick={()=>handlePostLike(feed._id)}
+                      onClick={() => handlePostLike(feed._id)}
                     >
                       <i
                         className={
@@ -245,6 +263,7 @@ const FeedPage = () => {
               </div>
             ))}
       </div>
+      /
       <div>
         {selectedPost && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 ">
@@ -314,8 +333,10 @@ const FeedPage = () => {
                               </span>
                               <span>{comment.content}</span>
                             </div>
-                            <span className="cursor-pointer transition"
-                            onClick={()=>handleCommentLike(comment._id)}>
+                            <span
+                              className="cursor-pointer transition"
+                              onClick={() => handleCommentLike(comment._id)}
+                            >
                               <i
                                 className={
                                   // likedPosts[comment._id]
@@ -350,6 +371,20 @@ const FeedPage = () => {
                 {/* ACTIONS */}
                 <div className="p-4 border-t flex flex-col gap-2">
                   <div className="flex gap-4 text-lg">
+                    <span
+                      className="cursor-pointer transition"
+                      onClick={() => handlePostLike(selectedPost._id)}
+                    >
+                      <i
+                        className={
+                          // likedPosts[feed._id]
+                          selectedPost.isLiked
+                            ? "fa-solid fa-heart text-red-500"
+                            : "fa-regular fa-heart"
+                        }
+                      ></i>{" "}
+                      {/* {feed.likesCount} */}
+                    </span>
                     <i className="fa-regular fa-heart cursor-pointer"></i>
                     <i className="fa-regular fa-comment cursor-pointer"></i>
                     <i className="fa-regular fa-paper-plane cursor-pointer"></i>
@@ -368,10 +403,15 @@ const FeedPage = () => {
                   <div className="flex items-center gap-2 mt-2">
                     <input
                       type="text"
+                      id="comment-content"
+                      onChange={(e)=>setContent(e.target.value)}
+                      required
                       placeholder="Add a comment..."
                       className="flex-1 border rounded-full px-3 py-2 text-sm outline-none"
                     />
-                    <button className="text-blue-500 font-medium">Post</button>
+                    <button onClick={()=>createComment(selectedPost._id)} className="text-blue-500 font-medium">
+                      Comment
+                    </button>
                   </div>
                 </div>
               </div>
