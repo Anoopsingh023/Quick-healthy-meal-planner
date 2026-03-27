@@ -52,107 +52,10 @@ const deleteComment = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, {}, "Comment deleted successfully"));
 });
 
-// const getComments = asyncHandler(async (req, res) => {
-//   const { postId } = req.params;
-//   const { page = 1, limit = 10 } = req.query;
-
-//   const aggregate = Comment.aggregate([
-//     {
-//       $match: {
-//         imagePost: new mongoose.Types.ObjectId(postId),
-//         parentComment: null,
-//         isDeleted: false,
-//       },
-//     },
-
-//     { $sort: { createdAt: -1 } },
-
-//     // 🔥 Join owner
-//     {
-//       $lookup: {
-//         from: "users",
-//         localField: "owner",
-//         foreignField: "_id",
-//         as: "owner",
-//         pipeline: [
-//           {
-//             $project: {
-//               fullName: 1,
-//               avatar: 1,
-//               username: 1,
-//             },
-//           },
-//         ],
-//       },
-//     },
-
-//     { $unwind: "$owner" },
-
-//     // 🔥 Get replies (LIMITED like Instagram)
-//     {
-//       $lookup: {
-//         from: "comments",
-//         let: { commentId: "$_id" },
-//         pipeline: [
-//           {
-//             $match: {
-//               $expr: { $eq: ["$parentComment", "$$commentId"] },
-//               isDeleted: false,
-//             },
-//           },
-//           { $sort: { createdAt: 1 } },
-//           { $limit: 2 },
-
-//           {
-//             $lookup: {
-//               from: "users",
-//               localField: "owner",
-//               foreignField: "_id",
-//               as: "owner",
-//               pipeline: [
-//                 {
-//                   $project: {
-//                     fullName: 1,
-//                     avatar: 1,
-//                     username: 1,
-//                   },
-//                 },
-//               ],
-//             },
-//           },
-//           { $unwind: "$owner" },
-//         ],
-//         as: "replies",
-//       },
-//     },
-//     {
-//   $addFields: {
-//     content: {
-//       $cond: [
-//         { $eq: ["$isDeleted", true] },
-//         "This comment was deleted",
-//         "$content"
-//       ]
-//     }
-//   }
-// }
-//   ]);
-
-//   const options = {
-//     page: parseInt(page),
-//     limit: parseInt(limit),
-//   };
-
-//   const result = await Comment.aggregatePaginate(aggregate, options);
-
-//   res
-//     .status(200)
-//     .json(new apiResponse(200, result, "Comments fetched successfully"));
-// });
-
 const getComments = asyncHandler(async (req, res) => {
   const { postId } = req.params;
   const { page = 1, limit = 10 } = req.query;
+  const userId = req.user._id;
 
   const aggregate = Comment.aggregate([
     {
@@ -256,6 +159,62 @@ const getComments = asyncHandler(async (req, res) => {
     },
 
     // ❤️ Likes count
+    // {
+    //   $lookup: {
+    //     from: "likes",
+    //     let: { commentId: "$_id" },
+    //     pipeline: [
+    //       {
+    //         $match: {
+    //           $expr: {
+    //             $and: [
+    //               { $eq: ["$target", "$$commentId"] },
+    //               { $eq: ["$targetType", "Comment"] },
+    //               { $eq: ["$likedBy", new mongoose.Types.ObjectId(userId)] },
+    //             ],
+    //           },
+    //         },
+    //       },
+    //     ],
+    //     as: "likes",
+    //   },
+    // },
+
+    // {
+    //   $addFields: {
+    //     likesCount: { $size: "$likes" },
+    //     isLiked: { $gt: [{ $size: "$likes" }, 0] },
+    //   },
+    // },
+
+    // 🔥 Check if current user liked
+    // {
+    //   $lookup: {
+    //     from: "likes",
+    //     let: { commentId: "$_id" },
+    //     pipeline: [
+    //       {
+    //         $match: {
+    //           $expr: {
+    //             $and: [
+    //               { $eq: ["$target", "$$commentId"] },
+    //               { $eq: ["$targetType", "Comment"] },
+    //               { $eq: ["$likedBy", new mongoose.Types.ObjectId(userId)] },
+    //             ],
+    //           },
+    //         },
+    //       },
+    //     ],
+    //     as: "likedByUser",
+    //   },
+    // },
+
+    // {
+    //   $addFields: {
+    //     isLiked: { $gt: [{ $size: "$likedByUser" }, 0] },
+    //   },
+    // },
+    // ❤️ Get ALL likes (for count)
     {
       $lookup: {
         from: "likes",
@@ -276,37 +235,14 @@ const getComments = asyncHandler(async (req, res) => {
       },
     },
 
+    // 🔥 Compute likesCount + isLiked in ONE step
     {
       $addFields: {
         likesCount: { $size: "$likes" },
-      },
-    },
 
-    // 🔥 Check if current user liked
-    {
-      $lookup: {
-        from: "likes",
-        let: { commentId: "$_id" },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$target", "$$commentId"] },
-                  { $eq: ["$targetType", "Comment"] },
-                  { $eq: ["$likedBy", new mongoose.Types.ObjectId(userId)] },
-                ],
-              },
-            },
-          },
-        ],
-        as: "likedByUser",
-      },
-    },
-
-    {
-      $addFields: {
-        isLiked: { $gt: [{ $size: "$likedByUser" }, 0] },
+        isLiked: {
+          $in: [new mongoose.Types.ObjectId(userId), "$likes.likedBy"],
+        },
       },
     },
   ]);

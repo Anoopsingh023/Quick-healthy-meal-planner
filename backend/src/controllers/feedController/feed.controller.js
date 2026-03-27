@@ -16,14 +16,14 @@ export const getFeed = asyncHandler(async (req, res) => {
         foreignField: "_id",
         as: "owner",
         pipeline: [
-                {
-                  $project: {
-                    userName: 1,
-                    fullName: 1,
-                    avatar: 1
-                  }
-                },
-              ]
+          {
+            $project: {
+              userName: 1,
+              fullName: 1,
+              avatar: 1,
+            },
+          },
+        ],
       },
     },
     { $unwind: "$owner" },
@@ -64,36 +64,7 @@ export const getFeed = asyncHandler(async (req, res) => {
       },
     },
 
-    // 💬 Comments preview (2 only)
-    // {
-    //   $lookup: {
-    //     from: "comments",
-    //     let: { postId: "$_id" },
-    //     pipeline: [
-    //       {
-    //         $match: {
-    //           $expr: { $eq: ["$imagePost", "$$postId"] },
-    //           parentComment: null,
-    //           isDeleted: false,
-    //         },
-    //       },
-    //       { $sort: { createdAt: -1 } },
-    //       { $limit: 2 },
 
-    //       {
-    //         $lookup: {
-    //           from: "users",
-    //           localField: "owner",
-    //           foreignField: "_id",
-    //           as: "owner",
-    //         },
-    //       },
-    //       { $unwind: "$owner" },
-    //     ],
-    //     as: "commentsPreview",
-    //   },
-    // },
-    
     // 💬 Comments count
     {
       $lookup: {
@@ -121,13 +92,13 @@ export const getFeed = asyncHandler(async (req, res) => {
                   $project: {
                     userName: 1,
                     fullName: 1,
-                    avatar: 1
-                  }
+                    avatar: 1,
+                  },
                 },
-              ]
+              ],
             },
           },
-          
+
           { $unwind: "$owner" },
         ],
         as: "comments",
@@ -136,6 +107,20 @@ export const getFeed = asyncHandler(async (req, res) => {
     {
       $addFields: {
         commentsCount: { $size: "$comments" },
+      },
+    },
+    {
+      $project: {
+        caption: 1,
+        owner: 1,
+        commentsCount: 1,
+        imageFile: 1,
+        isLiked: 1,
+        isPublished: 1,
+        likesCount: 1,
+        createdAt:1,
+        updatedAt:1,
+        views:1
       },
     },
   ]);

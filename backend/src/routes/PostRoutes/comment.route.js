@@ -15,7 +15,7 @@ router.use(protect);
 router.post("/", createComment);
 
 // Get comments of a post (pagination)
-router.get("/:postId", getComments);
+router.get("/get/:postId", getComments);
 
 // Delete comment
 router.delete("/delete/:commentId", deleteComment);
