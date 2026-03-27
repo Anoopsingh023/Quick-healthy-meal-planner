@@ -4,6 +4,7 @@ import axios from "axios";
 import { base_url } from "../../utils/constant";
 import { formatDistanceToNow } from "date-fns";
 import { toggleLikeApi } from "../../apis/likeApi";
+import { fetchComments } from "../../apis/commentApi";
 
 const PostSkeleton = () => {
   return (
@@ -36,8 +37,7 @@ const FeedPage = () => {
   const [likedPosts, setLikedPosts] = useState({});
   const [selectedPost, setSelectedPost] = useState(null);
   const [showHeart, setShowHeart] = useState(null);
-
-  // const [isLiked, setIsLiked] = useState(initialLiked);
+  const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(false);
 
   const handlePostLike = async (postId) => {
@@ -59,6 +59,14 @@ const FeedPage = () => {
     }
   };
 
+  const handleComments = async(feed)=>{
+    const postId = feed?._id
+    const res = await fetchComments(postId)
+    setComments(res.data)
+    setSelectedPost(feed)
+    
+  }
+
   const handleCommentLike = async (postId) => {
     if (loading) return;
 
@@ -70,7 +78,8 @@ const FeedPage = () => {
         targetType: "Comment",
       });
       console.log("toggle Comment Like", res);
-      fetchFeed();
+      // fetchFeed();
+      // fetchComments(postId)
     } catch (err) {
       console.log(err);
     } finally {
@@ -235,7 +244,8 @@ const FeedPage = () => {
 
                     <span
                       className="cursor-pointer hover:text-blue-500 transition"
-                      onClick={() => setSelectedPost(feed)}
+                      // onClick={() => setSelectedPost(feed)}
+                      onClick={()=>handleComments(feed)}
                     >
                       <i className="fa-regular fa-comment"></i>{" "}
                       {feed.commentsCount}
@@ -315,7 +325,7 @@ const FeedPage = () => {
 
                   {/* Example Comments */}
                   <div>
-                    {selectedPost?.comments.map((comment) => (
+                    {comments?.docs.map((comment) => (
                       <div
                         className="flex flex-col justify-center gap-1 w-full"
                         key={comment._id}
@@ -339,7 +349,6 @@ const FeedPage = () => {
                             >
                               <i
                                 className={
-                                  // likedPosts[comment._id]
                                   comment.isLiked
                                     ? "fa-solid fa-heart text-red-500"
                                     : "fa-regular fa-heart"
