@@ -11,7 +11,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "axios": "^1.12.2",
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.14.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
     "cloudinary": "^2.7.0",
@@ -26,6 +27,7 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemon": "^3.1.10",
-    "openai": "^6.5.0"
+    "openai": "^6.5.0",
+    "replicate": "^1.4.0"
   }
 }

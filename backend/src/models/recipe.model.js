@@ -44,11 +44,24 @@ const recipeSchema = new mongoose.Schema(
     },
 
     tags: [{ type: String }], // ["Budget", "Quick", "Kids-friendly"]
-    createdBy: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "User" 
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     }, // if user/AI created it
     source: { type: String }, // e.g., "AI Generated", "Spoonacular", "Manual"
+    hash: {
+      type: String,
+      unique: true,
+      index: true,
+    },
+    cacheKey: {
+      type: String,
+      index: true,
+    },
+    expiresAt: {
+      type: Date,
+      index: { expires: 0 }, // TTL index
+    },
   },
   { timestamps: true },
 );
