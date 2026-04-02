@@ -9,8 +9,8 @@ import {
   getRecommendedRecipe,
 } from "../controllers/recipe.controller.js";
 import {
-  generateRecipePreviews,
-  getOrGenerateRecipeDetails,
+  generateAIRecipe,
+  streamAIRecipes,
 } from "../controllers/aiRecipe.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
 import { dbSearchRecipes } from "../controllers/searchRecipe.controller.js";
@@ -40,7 +40,7 @@ router.get("/db-search", dbSearchRecipes);
 router.get("/recommend",protect, getRecommendedRecipe);
 
 // AiRecipe generator
-router.post("/generate-previews", protect, generateRecipePreviews); // body: { ingredients: [...], count: 3 }
-router.post("/:id/details", protect, getOrGenerateRecipeDetails);   // body optional: { ingredientsAvailable: [...] }
+router.post("/generate-ai", protect, generateAIRecipe);
+router.get("/stream-ai", protect, streamAIRecipes);
 
 export default router;
