@@ -1,8 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
-import fs from "fs"
+import fs from "fs";
 import { apiError } from "./apiError.js";
-import { extractPublicId } from 'cloudinary-build-url'
-
+import { extractPublicId } from "cloudinary-build-url";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -13,36 +12,42 @@ cloudinary.config({
 const uploadOnCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null;
-    const response = await cloudinary.uploader.upload(localFilePath, 
-        {
-            resource_type: "auto",
-        }
-    );
+    const response = await cloudinary.uploader.upload(localFilePath, {
+      resource_type: "auto",
+    });
     fs.unlinkSync(localFilePath);
     return response;
-  }
-    catch (error) {
-    fs.unlinkSync(localFilePath); 
+  } catch (error) {
+    fs.unlinkSync(localFilePath);
     return null;
   }
 };
 
-const deleteImageFromCloudinary = async(fileUrl) =>{
+const deleteImageFromCloudinary = async (fileUrl) => {
   try {
-    const publicId = extractPublicId(fileUrl) 
-    const deleteResponse = await cloudinary.uploader.destroy(publicId, {invalidate: true})
+    const publicId = extractPublicId(fileUrl);
+    const deleteResponse = await cloudinary.uploader.destroy(publicId, {
+      invalidate: true,
+    });
   } catch (error) {
-    throw new apiError(400, error?.message || "unable to delete image")
+    throw new apiError(400, error?.message || "unable to delete image");
   }
-}
+};
 
-const deleteVideoFromCloudinary = async(fileUrl) =>{
+const deleteVideoFromCloudinary = async (fileUrl) => {
   try {
-    const publicId = extractPublicId(fileUrl) 
-    const deleteResponse = await cloudinary.uploader.destroy(publicId,{resource_type: "video"})
+    const publicId = extractPublicId(fileUrl);
+    const deleteResponse = await cloudinary.uploader.destroy(publicId, {
+      resource_type: "video",
+    });
   } catch (error) {
-    throw new apiError(400, error?.message || "unable to delete image")
+    throw new apiError(400, error?.message || "unable to delete image");
   }
-}
+};
 
-export {uploadOnCloudinary, deleteImageFromCloudinary, deleteVideoFromCloudinary}
+
+export {
+  uploadOnCloudinary,
+  deleteImageFromCloudinary,
+  deleteVideoFromCloudinary,
+};
