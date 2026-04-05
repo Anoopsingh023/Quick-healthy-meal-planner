@@ -13,9 +13,11 @@ const RecipeCard = ({ recipe = {} }) => {
     // isRecipeSaved(recipeId);
   }, []);
 
-  const handleRecipe = (recipeId) => {
-    if (!recipeId) return;
-    navigate(`/dashboard/${recipeId}`);
+  const handleRecipe = (recipe) => {
+    if (!recipe) return;
+    navigate(`/dashboard/${recipe._id}`, {
+      state: { recipe: recipe },
+    });
   };
 
   const title = recipe?.title || "Untitled recipe";
@@ -45,12 +47,22 @@ const RecipeCard = ({ recipe = {} }) => {
       {/* Image block (keeps your height semantics but improves responsiveness) */}
       <div className="w-full overflow-hidden">
         <div className="relative w-full h-44 sm:h-48 md:h-60 lg:h-52 rounded-b-none rounded-2xl overflow-hidden">
-          <img
-            onClick={() => handleRecipe(recipe?._id)}
+          {/* <img
+            onClick={() => handleRecipe(recipe)}
             className="w-full h-full object-cover transform transition-transform duration-500 ease-out hover:scale-105 cursor-pointer"
             src={imageSrc}
             alt={title ?? "Recipe image"}
-          />
+          /> */}
+
+          {recipe.image ? (
+            <img
+              src={recipe.image}
+              onClick={() => handleRecipe(recipe)}
+              className="w-full h-full object-cover transform transition-transform duration-500 ease-out hover:scale-105 cursor-pointer"
+            />
+          ) : (
+            <div className="h-40 bg-gray-200 animate-pulse rounded-xl" />
+          )}
 
           {/* subtle gradient overlay for legibility on hovering UI elements */}
           <div
@@ -103,7 +115,7 @@ const RecipeCard = ({ recipe = {} }) => {
         <h3
           className="text-xl sm:text-2xl font-semibold text-zinc-900 dark:text-zinc-100 cursor-pointer hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors duration-200 line-clamp-1"
           title={title}
-          onClick={() => handleRecipe(recipe?._id)}
+          onClick={() => handleRecipe(recipe)}
         >
           {title}
         </h3>

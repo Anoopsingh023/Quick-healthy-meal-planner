@@ -9,12 +9,13 @@ import { useState } from "react";
 
 const RecomendCard = ({ recipe = {} }) => {
   const recipeId = recipe?._id;
+  // console.log("Saved recipe id",recipeId)
   const { isSaved, isRecipeSaved, toggleSaveRecipe } = useSaveRecipe(recipeId);
   const navigate = useNavigate();
   const [isloged, setIsLoged] = useState(false);
 
   useEffect(() => {
-    isRecipeSaved(recipeId);
+    // isRecipeSaved(recipeId);
     const token = localStorage.getItem("token");
     if (token) {
       setIsLoged(true);
