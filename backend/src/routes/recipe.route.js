@@ -5,16 +5,16 @@ import {
   getRecipeById,
   updateRecipe,
   deleteRecipe,
-  searchRecipes,
+  // searchRecipes,
   getRecommendedRecipe,
 } from "../controllers/recipe.controller.js";
 import {
-  generateAIRecipe,
   streamAIRecipes,
 } from "../controllers/aiRecipe.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
-import { dbSearchRecipes } from "../controllers/searchRecipe.controller.js";
+// import { dbSearchRecipes } from "../controllers/searchRecipe.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import { searchRecipes } from "../controllers/searchRecipe.controller.js";
 
 const router = express.Router();
 
@@ -36,11 +36,10 @@ router.patch("/re/update/:id", protect,upload.single("image"), updateRecipe);
 router.delete("/re/delete/:id", protect, deleteRecipe);
 // Add this before getAllRecipes
 router.get("/search", searchRecipes);
-router.get("/db-search", dbSearchRecipes);
+// router.get("/db-search", dbSearchRecipes);
 router.get("/recommend",protect, getRecommendedRecipe);
 
 // AiRecipe generator
-router.post("/generate-ai", protect, generateAIRecipe);
 router.get("/stream-ai", protect, streamAIRecipes);
 
 export default router;
