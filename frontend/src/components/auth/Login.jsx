@@ -17,7 +17,7 @@ function Login() {
     setLoading(true);
 
     axios
-      .post(`${base_url}/users/login`, { email, password })
+      .post(`${base_url}/users/login`, { email, password },{withCredentials: true,})
       .then((res) => {
         // console.log(res.data);
         setLoading(false);
