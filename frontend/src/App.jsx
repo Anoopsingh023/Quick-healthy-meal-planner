@@ -15,6 +15,8 @@ import {
 import DbSearch from "./components/pages/DbSearch";
 import UserRecipeManager from "./components/user/UserRecipeManager";
 import FeedPage from "./components/postComponents/FeedPage";
+import AiRecipePage from "./components/aiServices/AiRecipePage";
+
 
 const appRouter = createBrowserRouter([
   {
@@ -42,6 +44,7 @@ const appRouter = createBrowserRouter([
       { path: "user-profile", element: <ProfilePage /> },
       { path: "user-Recipe", element: <UserRecipeManager /> },
       { path: "cook-insta", element: <FeedPage /> },
+      { path: "ai-recipe", element: <AiRecipePage /> },
     ],
   },
 ]);
