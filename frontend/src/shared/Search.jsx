@@ -10,14 +10,15 @@ import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchSuggestions } from "../hooks/useSearchRecipe";
 
-
 const Search = ({ onSelect, onSubmit }) => {
   const navigate = useNavigate();
   const { search: locationSearch } = useLocation();
   const paramsFromUrl = useMemo(
     () => new URLSearchParams(locationSearch),
-    [locationSearch]
+    [locationSearch],
   );
+
+  const [mode, setMode] = useState("normal"); // "normal" | "ai"
 
   // main input + suggestions
   const [query, setQuery] = useState("");
@@ -289,6 +290,7 @@ const Search = ({ onSelect, onSubmit }) => {
     if (s) params.append("sort", s);
     const lim = overrides.limit !== undefined ? overrides.limit : limit;
     if (lim) params.append("limit", String(lim));
+    if (mode) params.append("mode", mode);
     return params.toString();
   };
 
@@ -338,7 +340,12 @@ const Search = ({ onSelect, onSubmit }) => {
       return;
     }
 
-    const qs = buildQueryParams({ query: trimmed });
+    const qs = buildQueryParams({ query: trimmed, mode });
+    // if (mode == "ai"){
+    //   navigate(`/dashboard/ai-recipe?${qs}`)
+    // }
+    // else{
+    // }
     navigate(`/dashboard/search?${qs}`);
 
     if (onSubmit) {
@@ -451,14 +458,221 @@ const Search = ({ onSelect, onSubmit }) => {
               );
             })}
           </ul>,
-          document.body
+          document.body,
         )
       : null;
 
   return (
     <div className="relative w-full max-w-2xl mt-6">
-      <form onSubmit={handleSubmit} className="flex items-center gap-2">
-        <div className="flex items-center bg-white rounded-full  shadow-md  focus-within:ring-2 focus-within:ring-green-400 transition-all duration-200 flex-1">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col items-center gap-2 w-full"
+      >
+        <div className="flex w-full px-5 justify-between">
+          <div className="flex items-center gap-3 mb-2">
+            {/* <span className="text-sm text-gray-600">Search</span> */}
+
+            {/* Toggle Switch */}
+            <div
+              onClick={() =>
+                setMode((prev) => (prev === "normal" ? "ai" : "normal"))
+              }
+              className={`w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition ${
+                mode === "ai" ? "bg-green-500" : "bg-gray-300"
+              }`}
+            >
+              <div
+                className={`bg-white w-5 h-5 rounded-full shadow-md transform transition ${
+                  mode === "ai" ? "translate-x-7" : ""
+                }`}
+              />
+            </div>
+
+            <span className="text-sm text-green-600 font-medium">
+              {mode === "ai" ? "AI Mode 🤖" : "Normal"}
+            </span>
+          </div>
+
+          {/* Filter button with active filter badge */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setFilterOpen((s) => !s)}
+              className={`px-4 py-2 rounded-full shadow-md  flex items-center gap-2 ${
+                filterOpen ? "bg-green-50" : "bg-white "
+              } text-sm`}
+              aria-expanded={filterOpen}
+              aria-controls="search-filter-panel"
+            >
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center text-xs font-medium px-2 py-1 bg-green-600 text-white rounded-full">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {/* Filter panel */}
+            {filterOpen && (
+              <div
+                ref={filterPanelRef}
+                id="search-filter-panel"
+                className="absolute right-0 mt-2 w-96 bg-white rounded-2xl shadow-lg p-4 z-[10001]"
+              >
+                <div className="space-y-3">
+                  {/* Cuisines multi-select chips */}
+                  <div>
+                    <label className="text-xs text-gray-500">Cuisines</label>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {cuisines.map((c, idx) => (
+                        <div
+                          key={`${c}-${idx}`}
+                          className="flex items-center gap-2 bg-gray-100 text-sm px-2 py-1 rounded-full"
+                        >
+                          <span>{c}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeCuisine(idx)}
+                            className="text-xs px-1 rounded-full hover:bg-gray-200"
+                            aria-label={`Remove ${c}`}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+
+                      <input
+                        value={cuisineInput}
+                        onChange={(e) => setCuisineInput(e.target.value)}
+                        onKeyDown={onCuisineKeyDown}
+                        placeholder="Type cuisine and press Enter"
+                        className="min-w-[120px] px-3 py-2 rounded-lg border border-gray-200 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addCuisine(cuisineInput)}
+                        className="px-3 py-1 rounded-full border border-gray-200 text-sm"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Add multiple cuisines (e.g. Indian, Italian). They will be
+                      sent as comma-separated values.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-500">Diet</label>
+                      <select
+                        value={dietType}
+                        onChange={(e) => setDietType(e.target.value)}
+                        className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
+                      >
+                        <option value="">Any</option>
+                        <option value="Veg">Veg</option>
+                        <option value="Vegan">Vegan</option>
+                        <option value="Non-Veg">Non-Veg</option>
+                        <option value="Keto">Keto</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-gray-500">
+                        Difficulty
+                      </label>
+                      <select
+                        value={difficulty}
+                        onChange={(e) => setDifficulty(e.target.value)}
+                        className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
+                      >
+                        <option value="">Any</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-500">
+                        Cost Min (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={costMin}
+                        onChange={(e) => setCostMin(e.target.value)}
+                        className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">
+                        Cost Max (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={costMax}
+                        onChange={(e) => setCostMax(e.target.value)}
+                        className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-gray-500">Sort</label>
+                    <select
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
+                    >
+                      <option value="latest">Latest</option>
+                      <option value="costAsc">Cost — Low to High</option>
+                      <option value="costDesc">Cost — High to Low</option>
+                      <option value="timeAsc">Time — Short to Long</option>
+                      <option value="timeDesc">Time — Long to Short</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-gray-500">Per page</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={limit}
+                        onChange={(e) => setLimit(Number(e.target.value))}
+                        className="w-16 mt-1 px-2 py-1 rounded-lg border border-gray-200"
+                      />
+                    </div>
+
+                    <div className="ml-auto flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={resetFilters}
+                        className="px-3 py-1 text-sm rounded-full border border-gray-200"
+                      >
+                        Reset
+                      </button>
+                      <button
+                        type="button"
+                        onClick={applyFilters}
+                        className="px-3 py-1 text-sm rounded-full bg-green-600 text-white"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center w-full bg-white rounded-full  shadow-md  focus-within:ring-2 focus-within:ring-green-400 transition-all duration-200 flex-1">
           <div className="relative flex-1">
             <input
               ref={inputRef}
@@ -493,185 +707,6 @@ const Search = ({ onSelect, onSubmit }) => {
           >
             Search
           </button>
-        </div>
-
-        {/* Filter button with active filter badge */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setFilterOpen((s) => !s)}
-            className={`px-4 py-2 rounded-full shadow-md  flex items-center gap-2 ${
-              filterOpen
-                ? "bg-green-50"
-                : "bg-white "
-            } text-sm`}
-            aria-expanded={filterOpen}
-            aria-controls="search-filter-panel"
-          >
-            <span>Filters</span>
-            {activeFilterCount > 0 && (
-              <span className="inline-flex items-center justify-center text-xs font-medium px-2 py-1 bg-green-600 text-white rounded-full">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-
-          {/* Filter panel */}
-          {filterOpen && (
-            <div
-              ref={filterPanelRef}
-              id="search-filter-panel"
-              className="absolute right-0 mt-2 w-96 bg-white rounded-2xl shadow-lg p-4 z-[10001]"
-            >
-              <div className="space-y-3">
-                {/* Cuisines multi-select chips */}
-                <div>
-                  <label className="text-xs text-gray-500">Cuisines</label>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    {cuisines.map((c, idx) => (
-                      <div
-                        key={`${c}-${idx}`}
-                        className="flex items-center gap-2 bg-gray-100 text-sm px-2 py-1 rounded-full"
-                      >
-                        <span>{c}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeCuisine(idx)}
-                          className="text-xs px-1 rounded-full hover:bg-gray-200"
-                          aria-label={`Remove ${c}`}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-
-                    <input
-                      value={cuisineInput}
-                      onChange={(e) => setCuisineInput(e.target.value)}
-                      onKeyDown={onCuisineKeyDown}
-                      placeholder="Type cuisine and press Enter"
-                      className="min-w-[120px] px-3 py-2 rounded-lg border border-gray-200 focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addCuisine(cuisineInput)}
-                      className="px-3 py-1 rounded-full border border-gray-200 text-sm"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Add multiple cuisines (e.g. Indian, Italian). They will be
-                    sent as comma-separated values.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-gray-500">Diet</label>
-                    <select
-                      value={dietType}
-                      onChange={(e) => setDietType(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
-                    >
-                      <option value="">Any</option>
-                      <option value="Veg">Veg</option>
-                      <option value="Vegan">Vegan</option>
-                      <option value="Non-Veg">Non-Veg</option>
-                      <option value="Keto">Keto</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-gray-500">Difficulty</label>
-                    <select
-                      value={difficulty}
-                      onChange={(e) => setDifficulty(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
-                    >
-                      <option value="">Any</option>
-                      <option value="Easy">Easy</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Hard">Hard</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-gray-500">
-                      Cost Min (₹)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={costMin}
-                      onChange={(e) => setCostMin(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500">
-                      Cost Max (₹)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={costMax}
-                      onChange={(e) => setCostMax(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs text-gray-500">Sort</label>
-                  <select
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200"
-                  >
-                    <option value="latest">Latest</option>
-                    <option value="costAsc">Cost — Low to High</option>
-                    <option value="costDesc">Cost — High to Low</option>
-                    <option value="timeAsc">Time — Short to Long</option>
-                    <option value="timeDesc">Time — Long to Short</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs text-gray-500">Per page</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="50"
-                      value={limit}
-                      onChange={(e) => setLimit(Number(e.target.value))}
-                      className="w-16 mt-1 px-2 py-1 rounded-lg border border-gray-200"
-                    />
-                  </div>
-
-                  <div className="ml-auto flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={resetFilters}
-                      className="px-3 py-1 text-sm rounded-full border border-gray-200"
-                    >
-                      Reset
-                    </button>
-                    <button
-                      type="button"
-                      onClick={applyFilters}
-                      className="px-3 py-1 text-sm rounded-full bg-green-600 text-white"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </form>
 
