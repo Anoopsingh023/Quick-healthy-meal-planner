@@ -2,85 +2,197 @@ import mongoose from "mongoose";
 
 const recipeSchema = new mongoose.Schema(
   {
+    // ---------------- BASIC INFO ----------------
     title: {
       type: String,
       required: true,
+      trim: true,
     },
+
     image: {
       type: String,
     },
-    description: String, // short intro like "Quick 10-min healthy rice bowl"
+
+    description: {
+      type: String,
+      trim: true,
+    },
+
+    // 🔥 Combined searchable text (for fallback search)
+    searchText: {
+      type: String,
+      index: "text",
+    },
+
+    // ---------------- INGREDIENTS ----------------
     ingredients: [
       {
-        // img: { type: String },
-        name: { type: String, required: true }, // "Tomato"
-        quantity: { type: String }, // "2 cups", "1 tbsp"
+        name: { type: String, required: true },
+        quantity: { type: String },
         optional: { type: Boolean, default: false },
       },
     ],
+
+    // ---------------- STEPS ----------------
     steps: [
       {
         stepNumber: Number,
-        instruction: { type: String, required: true }, // "Chop onions and tomatoes..."
-        time: { type: Number }, // in minutes (optional)
+        instruction: { type: String, required: true },
+        time: { type: Number },
       },
     ],
+
+    // ---------------- METADATA ----------------
     metadata: {
-      cookingTime: { type: Number, required: true }, // in minutes
+      cookingTime: { type: Number, required: true },
+
       difficulty: {
         type: String,
         enum: ["Beginner", "Intermediate", "Expert"],
         default: "Beginner",
       },
-      cuisine: { type: String }, // "Indian", "Chinese", "Italian"
+
+      cuisine: { type: String },
+
       dietType: {
         type: String,
         enum: ["Veg", "Vegan", "Non-Veg", "Any"],
         default: "Any",
       },
+
       foodType: [{ type: String }],
-      costEstimate: { type: Number }, // ₹ estimate for recipe
-      calories: { type: Number }, // optional, per serving
+
+      costEstimate: { type: Number },
+
+      calories: { type: Number },
     },
 
-    tags: [{ type: String }], // ["Budget", "Quick", "Kids-friendly"]
+    // ---------------- TAGS ----------------
+    tags: [{ type: String }],
+
+    // ---------------- VECTOR SEARCH ----------------
+    embedding: {
+      type: [Number],
+      required: true,
+      validate: {
+        validator: function (v) {
+          return v.length === 768;
+        },
+        message: "Embedding must be 768 dimensions",
+      },
+    },
+
+    // ---------------- RANKING ----------------
+    stats: {
+      views: { type: Number, default: 0 },
+      likes: { type: Number, default: 0 },
+      saves: { type: Number, default: 0 },
+
+      rating: { type: Number, default: 0 },
+      ratingCount: { type: Number, default: 0 },
+    },
+
+    // 🔥 Precomputed scores (FAST sorting)
+    popularityScore: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+
+    qualityScore: {
+      type: Number,
+      default: 0,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ---------------- SOURCE ----------------
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-    }, // if user/AI created it
-    source: { type: String }, // e.g., "AI Generated", "Spoonacular", "Manual"
+    },
+
+    source: {
+      type: String,
+      default: "Manual",
+    },
+
+    // ---------------- CACHE ----------------
     hash: {
       type: String,
       unique: true,
+      sparse: true,
       index: true,
     },
+
     cacheKey: {
       type: String,
       index: true,
     },
+
     expiresAt: {
       type: Date,
-      index: { expires: 0 }, // TTL index
+      index: { expires: 0 }, // TTL
     },
   },
   { timestamps: true },
 );
 
-recipeSchema.index({ "metadata.cuisine": 1 });
-recipeSchema.index({ "metadata.dietType": 1 });
-recipeSchema.index({ tags: 1 });
-recipeSchema.index({ "metadata.foodType": 1 });
+// ================= INDEXES =================
 
+// 🔥 Text search fallback
+recipeSchema.index({
+  title: "text",
+  description: "text",
+  tags: "text",
+  "ingredients.name": "text",
+});
+
+
+// 🔥 Filtering indexes
+recipeSchema.index({ "metadata.cuisine": 1, "metadata.dietType": 1 });
+recipeSchema.index({ "metadata.costEstimate": 1 });
+recipeSchema.index({ createdAt: -1 });
+recipeSchema.index({ popularityScore: -1 });
+
+// ================= PRE-SAVE HOOK =================
 recipeSchema.pre("save", function (next) {
-  if (this.metadata.foodType) {
+  // Normalize text fields
+  if (this.metadata?.foodType) {
     this.metadata.foodType = this.metadata.foodType.map((t) => t.toLowerCase());
   }
+
   if (this.tags) {
     this.tags = this.tags.map((t) => t.toLowerCase());
   }
-  if (this.metadata.cuisine) {
+
+  if (this.metadata?.cuisine) {
     this.metadata.cuisine = this.metadata.cuisine.toLowerCase();
   }
+
+  // 🔥 Build searchable text
+  this.searchText = `
+    ${this.title}
+    ${this.description || ""}
+    ${(this.tags || []).join(" ")}
+    ${this.metadata?.cuisine || ""}
+    ${(this.ingredients || []).map((i) => i.name).join(" ")}
+  `;
+
+  // 🔥 Compute popularity score
+  this.popularityScore =
+    (this.stats?.likes || 0) * 0.3 +
+    (this.stats?.saves || 0) * 0.4 +
+    (this.stats?.views || 0) * 0.1;
+
+  // 🔥 Compute quality score
+  this.qualityScore =
+    (this.stats?.rating || 0) * 0.7 +
+    Math.log10((this.stats?.ratingCount || 0) + 1) * 0.3;
+
   next();
 });
 
