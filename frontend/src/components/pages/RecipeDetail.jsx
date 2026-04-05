@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import useRecipe from "../../hooks/useRecipe";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import Ingredients from "../../shared/Ingredients";
 import { Tag, TimeTag, PriceTag, CalorieTag } from "../../shared/Tag";
 import axios from "axios";
@@ -8,9 +8,12 @@ import { base_url } from "../../utils/constant";
 import BackButton from "../../shared/BackButton";
 
 const RecipeDetail = () => {
+  const location = useLocation();
+const recipe = location.state?.recipe;
   const { recipeId } = useParams();
   const { recipeById, getRecipeById } = useRecipe(recipeId);
   const [isSaved, setIsSaved] = useState();
+  const [detailedRecipe, setDetailedRecipe] = useState()
 
   const toggleSaveRecipe = async (recipeId) => {
     try {
@@ -60,6 +63,9 @@ const RecipeDetail = () => {
 
   useEffect(() => {
     isRecipeSaved();
+    if(recipe){
+      setDetailedRecipe(recipe)
+    }
     getRecipeById();
   }, []);
 
