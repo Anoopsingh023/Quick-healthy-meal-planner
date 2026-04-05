@@ -1,113 +1,3 @@
-// import React, { useEffect, useState } from "react";
-// import { useNavigate, useLocation } from "react-router-dom";
-// import axios from "axios";
-// import { base_url } from "../../utils/constant";
-// import RecipeCard from "../../shared/RecipeCard";
-// import BackButton from "../../shared/BackButton";
-
-// const API_URL = `${base_url}/recipes`;
-
-// const SearchResults = () => {
-//   const navigate = useNavigate();
-//   const { search } = useLocation();
-//   const rawQ = new URLSearchParams(search).get("q") ?? "";
-//   const query = rawQ.trim();
-
-//   const [loading, setLoading] = useState(false);
-//   const [results, setResults] = useState([]);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     if (!query) {
-//       setResults([]);
-//       setError(null);
-//       setLoading(false);
-//       return;
-//     }
-
-//     const controller = new AbortController();
-//     const signal = controller.signal;
-
-//     const fetchResults = async () => {
-//       try {
-//         setLoading(true);
-//         setError(null);
-
-//         const res = await axios.get(`${API_URL}/search`, {
-//           params: { query },
-//           signal,
-//           headers: {
-//             // include token only if your search endpoint requires auth
-//             Authorization: localStorage.getItem("token")
-//               ? "Bearer " + localStorage.getItem("token")
-//               : undefined,
-//           },
-//         });
-
-//         console.log("Search result",res.data)
-//         const data = res.data;
-//         if (Array.isArray(data)) {
-//           setResults(data);
-//         } else if (data?.success && Array.isArray(data.data)) {
-//           setResults(data.data);
-//         } else if (data?.success && Array.isArray(data.data?.data)) {
-//           setResults(data.data.data);
-//         } else if (Array.isArray(data.items)) {
-//           setResults(data.items);
-//         } else {
-//           console.warn("Unexpected search response shape:", data);
-//           setResults([]);
-//         }
-//       } catch (err) {
-//         if (axios.isCancel && axios.isCancel(err)) {
-//           // request was cancelled
-//           return;
-//         }
-//         console.error("Search error", err?.response?.data ?? err.message ?? err);
-//         setError(err?.response?.data?.message || err.message || "Failed to search");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchResults();
-
-//     return () => {
-//       controller.abort?.();
-//     };
-//   }, [query]);
-
-//   return (
-//     <div className="p-6 max-w-5xl mx-auto">
-//       <div className="flex items-center justify-between mb-4">
-//         <h2 className="text-2xl font-semibold">
-//           Search results {query ? <>for <span className="text-green-600">"{query}"</span></> : null}
-//         </h2>
-//         <BackButton/>
-//       </div>
-
-//       {loading ? (
-//         <div>Loading...</div>
-//       ) : error ? (
-//         <div className="text-red-600">Error: {error}</div>
-//       ) : results.length === 0 ? (
-//         <div className="p-6 rounded-2xl bg-[#cacaca] text-gray-600">No results found.</div>
-//       ) : (
-//         <div className="grid grid-cols-1 gap-4">
-//           {results.map((r, i) => (
-//             <div key={r._id || r.id || i} className="  ">
-//               <RecipeCard recipe={r} />
-//             </div>
-//           ))}
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default SearchResults;
-
-
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
@@ -136,6 +26,7 @@ const SearchResults = () => {
   const costMax = parseNumber(params.get("costMax"));
   const sort = params.get("sort") || "";
   const limit = parseNumber(params.get("limit")) || 12;
+  const mode = params.get("mode") || "normal";
 
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
@@ -164,6 +55,7 @@ const SearchResults = () => {
     const signal = controller.signal;
 
     const fetchResults = async () => {
+      let isStreaming = false; // 👈 ADD
       try {
         setLoading(true);
         setError(null);
@@ -179,18 +71,128 @@ const SearchResults = () => {
         if (sort) reqParams.sort = sort;
         if (limit) reqParams.limit = limit;
 
-        const res = await axios.get(`${API_URL}/search`, {
-          params: reqParams,
-          signal,
-          headers: {
-            Authorization: localStorage.getItem("token")
-              ? "Bearer " + localStorage.getItem("token")
-              : undefined,
-          },
-        });
+        let res;
 
-        // Useful debug while developing - remove if noisy
-        // console.info("Search result (raw):", res);
+        
+
+        if (mode === "ai") {
+          isStreaming = true; // 👈 IMPORTANT
+          const cacheKey = `aiRecipes-${query}`;
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            try {
+              const parsed = JSON.parse(cached);
+
+              const ONE_DAY = 1 * 60 * 60 * 1000;
+
+              // ✅ check expiry
+              if (Date.now() - parsed.time < ONE_DAY) {
+                setResults(parsed.data);
+
+                console.log("Cached data", parsed.data);
+                return; // 🚫 skip API call
+              } else {
+                // ❌ expired → remove
+                localStorage.removeItem(cacheKey);
+              }
+            } catch (err) {
+              console.error("Cache parse error", err);
+              localStorage.removeItem(cacheKey);
+            }
+          }
+          setLoading(true);
+
+          const eventSource = new EventSource(
+            `${API_URL}/stream-ai?query=${encodeURIComponent(query)}`,
+            { withCredentials: true },
+          );
+
+          eventSource.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+
+              // ✅ append one by one
+              setResults((prev) => {
+                const updated = [...prev, data.recipe];
+                const cacheKey = `aiRecipes-${query}`;
+
+                // 🔥 store in localStorage
+                const cacheData = {
+                  data: updated,
+                  time: Date.now(), // save current time
+                };
+
+                localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+                console.log("Ai response ", updated);
+                return updated;
+              });
+            } catch (err) {
+              console.error("Parse error", err);
+            }
+          };
+
+          // 🔥 IMAGE UPDATE LISTENER
+          eventSource.addEventListener("image", (event) => {
+            const { recipeId, image } = JSON.parse(event.data);
+
+            setResults((prev) => {
+              const updated = prev.map((r) =>
+                r._id === recipeId ? { ...r, image } : r,
+              );
+
+              // 🔥 UPDATE CACHE AGAIN
+              const cacheKey = `aiRecipes-${query}`;
+              localStorage.setItem(
+                cacheKey,
+                JSON.stringify({
+                  data: updated,
+                  time: Date.now(),
+                }),
+              );
+
+              return updated;
+            });
+          });
+
+          eventSource.addEventListener("end", () => {
+            setResults((prev) => {
+              const cacheKey = `aiRecipes-${query}`;
+
+              localStorage.setItem(
+                cacheKey,
+                JSON.stringify({
+                  data: prev,
+                  time: Date.now(),
+                }),
+              );
+
+              return prev;
+            });
+            setLoading(false);
+            eventSource.close();
+          });
+
+          eventSource.onerror = () => {
+            setError("Streaming failed");
+            setLoading(false);
+            eventSource.close();
+          };
+
+          return () => {
+            eventSource.close();
+          };
+        } else {
+          // 🔥 NORMAL SEARCH (existing)
+          res = await axios.get(`${API_URL}/search`, {
+            params: reqParams,
+            signal,
+            headers: {
+              Authorization: localStorage.getItem("token")
+                ? "Bearer " + localStorage.getItem("token")
+                : undefined,
+            },
+          });
+        }
 
         const data = res?.data;
 
@@ -229,7 +231,9 @@ const SearchResults = () => {
           "Failed to fetch search results";
         setError(message);
       } finally {
-        setLoading(false);
+        if (!isStreaming) { // 👈 FIX
+    setLoading(false);
+  }
       }
     };
 
@@ -239,8 +243,17 @@ const SearchResults = () => {
       // abort when component unmounts or params change
       controller.abort();
     };
-    // Re-run effect whenever the raw search string changes
-  }, [query, cuisine, dietType, difficulty, costMin, costMax, sort, limit, search]);
+  }, [
+    query,
+    cuisine,
+    dietType,
+    difficulty,
+    costMin,
+    costMax,
+    sort,
+    limit,
+    search,
+  ]);
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -256,7 +269,25 @@ const SearchResults = () => {
         <BackButton />
       </div>
 
-      {loading ? (
+      <div>
+        {loading && results.length == 0 ? (
+          <div className="text-sm text-gray-600 animate-pulse">Generating recipes...</div>
+        ) : null}
+      </div>
+      <div>
+        {loading && results.length > 0 && (
+          <div className="text-sm text-gray-500 animate-pulse">Generating more recipes...</div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        {results.map((r, i) => (
+          <div key={r._id || r.id || i}>
+            <RecipeCard recipe={r} />
+          </div>
+        ))}
+      </div>
+
+      {/* {loading ? (
         <div>Loading...</div>
       ) : error ? (
         <div className="text-red-600">Error: {error}</div>
@@ -272,7 +303,7 @@ const SearchResults = () => {
             </div>
           ))}
         </div>
-      )}
+      )} */}
     </div>
   );
 };
