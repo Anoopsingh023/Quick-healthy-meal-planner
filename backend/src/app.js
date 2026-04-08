@@ -27,6 +27,7 @@ import postRouter from "./routes/PostRoutes/image.route.js"
 import commentRouter from "./routes/PostRoutes/comment.route.js";
 import likeRouter from "./routes/PostRoutes/like.route.js";
 import feedRouter from "./routes/feedRoute/feed.route.js";
+import searchRouter from "./routes/search.routes.js"
 
 
 app.use("/api/v1/users", userRouter)
@@ -37,6 +38,7 @@ app.use("/api/v1/posts", postRouter)
 app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/likes", likeRouter);
 app.use("/api/v1/feeds", feedRouter);
+app.use("/api/v1/searches",searchRouter)
 
 
 
