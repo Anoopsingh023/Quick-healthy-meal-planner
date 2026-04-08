@@ -37,7 +37,9 @@ export const spoonacularSearch = async ({ query, cuisine, limit }) => {
       const mapped = mapSpoonacularToRecipe(data);
 
       const hash = createHash(
-        mapped.title + JSON.stringify(mapped.ingredients)+mapped.metadata?.cuisine,
+        mapped.title +
+          JSON.stringify(mapped.ingredients) +
+          mapped.metadata?.cuisine,
       );
 
       let existing = await Recipe.findOne({ hash });
@@ -47,7 +49,12 @@ export const spoonacularSearch = async ({ query, cuisine, limit }) => {
         continue;
       }
 
-      const text = `${mapped.title} ${mapped.description || ""} ${mapped.tags.join(" ")}`;
+      const text = `${mapped.title} 
+      ${mapped.description || ""} 
+      Cuisine: ${mapped.metadata?.cuisine || ""} 
+      Diet: ${mapped.metadata?.dietType || ""} 
+      Ingredients: ${mapped.ingredients?.map((i) => i.name).join(", ")} 
+      Tags: ${mapped.tags?.join(", ")}`;
       const embedding = await getEmbedding(text);
 
       const newRecipe = await Recipe.create({
