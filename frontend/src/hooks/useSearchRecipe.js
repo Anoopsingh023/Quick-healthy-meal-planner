@@ -11,18 +11,13 @@ export const fetchSuggestions = async (query, signal) => {
   if (!query || !String(query).trim()) return [];
 
   try {
-    const res = await axios.get(`${base_url}/recipes/search`, {
+    const res = await axios.get(`${base_url}/searches/suggestions`, {
       params: { query, limit: 8 }, // limit optional; adjust to your controller
       headers: {
         Authorization: "Bearer " + localStorage.getItem("token"),
       },
-      // axios supports AbortController signal starting v0.22+. If your axios is older,
-      // use cancelToken instead (see axios docs).
       signal,
     });
-
-    // DEBUG: Inspect response shape in console (remove in production)
-    // console.log("fetchSuggestions response:", res);
 
     // Try several common shapes and return the first array we find
     const body = res?.data;

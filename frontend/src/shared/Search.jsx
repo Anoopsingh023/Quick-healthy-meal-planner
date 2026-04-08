@@ -118,48 +118,48 @@ const Search = ({ onSelect, onSubmit }) => {
   }, []);
 
   // suggestions fetching (debounced) — honors AbortController signal
-  // useEffect(() => {
-  //   if (!query?.trim()) {
-  //     setSuggestions([]);
-  //     setShowSuggestions(false);
-  //     setHighlightedIndex(-1);
-  //     return;
-  //   }
+  useEffect(() => {
+    if (!query?.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+      return;
+    }
 
-  //   setLoading(true);
-  //   if (fetchAbortRef.current) {
-  //     try {
-  //       fetchAbortRef.current.abort();
-  //     } catch {}
-  //   }
-  //   const controller = new AbortController();
-  //   fetchAbortRef.current = controller;
+    setLoading(true);
+    if (fetchAbortRef.current) {
+      try {
+        fetchAbortRef.current.abort();
+      } catch {}
+    }
+    const controller = new AbortController();
+    fetchAbortRef.current = controller;
 
-  //   const id = setTimeout(async () => {
-  //     try {
-  //       const data = await fetchSuggestions(query, controller.signal);
-  //       const items = Array.isArray(data) ? data : [];
-  //       setSuggestions(items);
-  //       setShowSuggestions(items.length > 0);
-  //       setHighlightedIndex(items.length > 0 ? 0 : -1);
-  //     } catch (err) {
-  //       // fetchSuggestions already catches aborts; ensure we reset on error
-  //       setSuggestions([]);
-  //       setShowSuggestions(false);
-  //       setHighlightedIndex(-1);
-  //     } finally {
-  //       setLoading(false);
-  //       updateDropdownPosition();
-  //     }
-  //   }, 350);
+    const id = setTimeout(async () => {
+      try {
+        const data = await fetchSuggestions(query, controller.signal);
+        const items = Array.isArray(data) ? data : [];
+        setSuggestions(items);
+        setShowSuggestions(items.length > 0);
+        setHighlightedIndex(items.length > 0 ? 0 : -1);
+      } catch (err) {
+        // fetchSuggestions already catches aborts; ensure we reset on error
+        setSuggestions([]);
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+      } finally {
+        setLoading(false);
+        updateDropdownPosition();
+      }
+    }, 500);
 
-  //   return () => {
-  //     clearTimeout(id);
-  //     try {
-  //       controller.abort();
-  //     } catch {}
-  //   };
-  // }, [query, updateDropdownPosition]);
+    return () => {
+      clearTimeout(id);
+      try {
+        controller.abort();
+      } catch {}
+    };
+  }, [query, updateDropdownPosition]);
 
   // reposition dropdown on scroll/resize
   useEffect(() => {
@@ -262,7 +262,7 @@ const Search = ({ onSelect, onSubmit }) => {
 
   // select suggestion
   const handleSelect = (item) => {
-    setQuery(item.title || item.name || "");
+    setQuery(item || "");
     setShowSuggestions(false);
     setHighlightedIndex(-1);
     if (onSelect) onSelect(item);
@@ -341,11 +341,6 @@ const Search = ({ onSelect, onSubmit }) => {
     }
 
     const qs = buildQueryParams({ query: trimmed, mode });
-    // if (mode == "ai"){
-    //   navigate(`/dashboard/ai-recipe?${qs}`)
-    // }
-    // else{
-    // }
     navigate(`/dashboard/search?${qs}`);
 
     if (onSubmit) {
@@ -440,20 +435,10 @@ const Search = ({ onSelect, onSubmit }) => {
                 >
                   <div className="flex flex-col">
                     <span className="font-medium text-sm">
-                      {item.title || item.name}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {item.metadata?.cuisine
-                        ? `${item.metadata.cuisine} • `
-                        : ""}
-                      {item.metadata?.dietType || ""}
+                      {item || item}
                     </span>
                   </div>
-                  {item.metadata?.cookingTime && (
-                    <div className="text-xs text-gray-400">
-                      {item.metadata.cookingTime}m
-                    </div>
-                  )}
+                  
                 </li>
               );
             })}
