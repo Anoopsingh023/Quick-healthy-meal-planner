@@ -37,7 +37,7 @@ export const spoonacularSearch = async ({ query, cuisine, limit }) => {
       const mapped = mapSpoonacularToRecipe(data);
 
       const hash = createHash(
-        mapped.title + JSON.stringify(mapped.ingredients),
+        mapped.title + JSON.stringify(mapped.ingredients)+mapped.metadata?.cuisine,
       );
 
       let existing = await Recipe.findOne({ hash });
@@ -47,13 +47,8 @@ export const spoonacularSearch = async ({ query, cuisine, limit }) => {
         continue;
       }
 
-      const text = `${mapped.title} ${mapped.description || ""}`;
+      const text = `${mapped.title} ${mapped.description || ""} ${mapped.tags.join(" ")}`;
       const embedding = await getEmbedding(text);
-      console.log("Embedding length:", embedding.length);
-    //   if (!embedding || embedding.length === 0) {
-    //     console.warn("Embedding failed, skipping recipe");
-    //     continue;
-    //   }
 
       const newRecipe = await Recipe.create({
         ...mapped,
@@ -63,7 +58,7 @@ export const spoonacularSearch = async ({ query, cuisine, limit }) => {
         spoonacularId: data.id,
         isVerified: true,
         stats: { rating: 4, ratingCount: 100 },
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        // expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
 
       savedRecipes.push(newRecipe);

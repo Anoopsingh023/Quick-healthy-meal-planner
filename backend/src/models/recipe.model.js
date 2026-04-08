@@ -27,6 +27,7 @@ const recipeSchema = new mongoose.Schema(
     // ---------------- INGREDIENTS ----------------
     ingredients: [
       {
+        img: { type: String },
         name: { type: String, required: true },
         quantity: { type: String },
         optional: { type: Boolean, default: false },
@@ -75,10 +76,8 @@ const recipeSchema = new mongoose.Schema(
       type: [Number],
       required: true,
       validate: {
-        validator: function (v) {
-          return v.length === 768;
-        },
-        message: "Embedding must be 768 dimensions",
+        validator: (v) => v.length === 384,
+        message: "Embedding must be 384 dimensions",
       },
     },
 
@@ -150,7 +149,6 @@ recipeSchema.index({
   tags: "text",
   "ingredients.name": "text",
 });
-
 
 // 🔥 Filtering indexes
 recipeSchema.index({ "metadata.cuisine": 1, "metadata.dietType": 1 });
