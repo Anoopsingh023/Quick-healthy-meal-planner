@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import connectDb from "./db/index.js";
 import { app } from "./app.js";
 import { scheduleStreakResetJob } from "./jobs/reset-streaks.js";
+import { getEmbedding } from "./utils/embedding.js";
 
 dotenv.config({
   path: "./env",
@@ -18,3 +19,10 @@ connectDb()
   .catch(() => {
     console.log("MongoDB connection failed !!!");
   });
+
+
+(async () => {
+  await getEmbedding("hello");
+  console.log("🔥 Model preloaded");
+})();
+
