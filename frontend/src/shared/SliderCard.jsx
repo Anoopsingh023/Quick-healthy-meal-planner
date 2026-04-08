@@ -10,11 +10,6 @@ import noodle from "../assets/recipe/noodle.jpg";
 import paneer from "../assets/recipe/paneer.jpg";
 import pizza from "../assets/recipe/pizza.jpg";
 import nonVeg from "../assets/recipe/nonVeg.jpg";
-import axios from "axios";
-import { base_url } from "../utils/constant";
-
-// Uploaded file path (for transform by your toolchain)
-const uploadedModelPath = "sandbox:/mnt/data/recipe.model.js";
 
 const PrevArrow = ({ onClick }) => (
   <button
@@ -43,7 +38,7 @@ const SliderCard = ({ cards = [] }) => {
     { id: 1, img: indian, name: "Indian",tag: ["indian"] },
     { id: 2, img: noodle, name: "Noodle", tag: ["noodle","maggie"] },
     { id: 3, img: dosa, name: "Dosa",tag: ["dosa", "masala dosa"] },
-    { id: 4, img: paneer, name: "Paneer" ,tag:["paneer"]},
+    { id: 4, img: paneer, name: "Paneer" ,tag:[ "paneer"]},
     { id: 5, img: cake, name: "Cake", tag:["cake", "bakery"] },
     { id: 6, img: biryani, name: "Biryani", tag: ["biryani", "haidrabadi biryani"] },
     { id: 7, img: pizza, name: "Pizza", tag: ["pizza"] },
@@ -53,26 +48,13 @@ const SliderCard = ({ cards = [] }) => {
   const getRecipeFromDb = async (tagsArray) => {
     try {
       const tag = tagsArray.join(",");
-      const isCuisine = tag.toLowerCase() === "indian";
-      const params = isCuisine ? { cuisine: tag } : { foodType: tag };
-      const res = await axios.get(`${base_url}/recipes/db-search`, {
-        params,
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
-      });
+      const params = {query:tag}
 
-      // you can pass the query in the URL so the search page can re-run the query
       const queryString = new URLSearchParams(params).toString();
-
-      // If you'd rather pass data through state, use: navigate('/dashboard/search', { state: { results: res.data } })
       navigate(`/dashboard/db-search?${queryString}`);
 
-      // optional: log the returned data for debugging
-      console.log("recipes from DB for", tag, res.data);
     } catch (error) {
       console.error("Error fetching recipes by dish:", error);
-      // optionally show a user-facing toast or notification here
     }
   };
 
@@ -121,12 +103,6 @@ const SliderCard = ({ cards = [] }) => {
   };
 
   return (
-    <div className="relative">
-      {dishes.length === 0 ? (
-        <div className="rounded-2xl p-6 bg-[#cacaca]">
-          <p className="text-gray-600">No saved recipes yet.</p>
-        </div>
-      ) : (
         <div className="relative">
           <Slider {...settings}>
             {dishes.map((dish) => (
@@ -162,8 +138,6 @@ const SliderCard = ({ cards = [] }) => {
             ))}
           </Slider>
         </div>
-      )}
-    </div>
   );
 };
 
