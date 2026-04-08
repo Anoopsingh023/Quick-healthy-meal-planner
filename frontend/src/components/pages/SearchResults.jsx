@@ -195,6 +195,7 @@ const SearchResults = () => {
         }
 
         const data = res?.data;
+        console.log("Normal search result",res.data)
 
         // Try multiple common shapes and set results to an array
         if (Array.isArray(data)) {

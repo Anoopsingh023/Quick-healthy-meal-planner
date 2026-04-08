@@ -118,48 +118,48 @@ const Search = ({ onSelect, onSubmit }) => {
   }, []);
 
   // suggestions fetching (debounced) — honors AbortController signal
-  useEffect(() => {
-    if (!query?.trim()) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      setHighlightedIndex(-1);
-      return;
-    }
+  // useEffect(() => {
+  //   if (!query?.trim()) {
+  //     setSuggestions([]);
+  //     setShowSuggestions(false);
+  //     setHighlightedIndex(-1);
+  //     return;
+  //   }
 
-    setLoading(true);
-    if (fetchAbortRef.current) {
-      try {
-        fetchAbortRef.current.abort();
-      } catch {}
-    }
-    const controller = new AbortController();
-    fetchAbortRef.current = controller;
+  //   setLoading(true);
+  //   if (fetchAbortRef.current) {
+  //     try {
+  //       fetchAbortRef.current.abort();
+  //     } catch {}
+  //   }
+  //   const controller = new AbortController();
+  //   fetchAbortRef.current = controller;
 
-    const id = setTimeout(async () => {
-      try {
-        const data = await fetchSuggestions(query, controller.signal);
-        const items = Array.isArray(data) ? data : [];
-        setSuggestions(items);
-        setShowSuggestions(items.length > 0);
-        setHighlightedIndex(items.length > 0 ? 0 : -1);
-      } catch (err) {
-        // fetchSuggestions already catches aborts; ensure we reset on error
-        setSuggestions([]);
-        setShowSuggestions(false);
-        setHighlightedIndex(-1);
-      } finally {
-        setLoading(false);
-        updateDropdownPosition();
-      }
-    }, 350);
+  //   const id = setTimeout(async () => {
+  //     try {
+  //       const data = await fetchSuggestions(query, controller.signal);
+  //       const items = Array.isArray(data) ? data : [];
+  //       setSuggestions(items);
+  //       setShowSuggestions(items.length > 0);
+  //       setHighlightedIndex(items.length > 0 ? 0 : -1);
+  //     } catch (err) {
+  //       // fetchSuggestions already catches aborts; ensure we reset on error
+  //       setSuggestions([]);
+  //       setShowSuggestions(false);
+  //       setHighlightedIndex(-1);
+  //     } finally {
+  //       setLoading(false);
+  //       updateDropdownPosition();
+  //     }
+  //   }, 350);
 
-    return () => {
-      clearTimeout(id);
-      try {
-        controller.abort();
-      } catch {}
-    };
-  }, [query, updateDropdownPosition]);
+  //   return () => {
+  //     clearTimeout(id);
+  //     try {
+  //       controller.abort();
+  //     } catch {}
+  //   };
+  // }, [query, updateDropdownPosition]);
 
   // reposition dropdown on scroll/resize
   useEffect(() => {
