@@ -67,7 +67,10 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { accessToken, refreshToken } = await generateTokens(user._id);
 
-  const options = { httpOnly: true, secure: true };
+  const options = { httpOnly: true, 
+    secure: true, // false for localhost
+     sameSite: "None" // none for production(HTTPS)
+    };
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
