@@ -2,6 +2,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { dbSearch } from "../services/dbSearch.service.js";
 import { spoonacularSearch } from "../services/spoonacular.service.js";
 import { rankRecipes } from "../services/ranking.service.js";
+import { User } from "../models/user.model.js";
+import { apiResponse } from "../utils/apiResponse.js";
 
 const searchRecipes = asyncHandler(async (req, res) => {
   const {
@@ -81,10 +83,7 @@ const searchRecipes = asyncHandler(async (req, res) => {
   // =========================================================
   // 3️⃣ MERGE + RANK
   // =========================================================
-  const finalResults = rankRecipes([
-    ...dbResults,
-    ...spoonResults,
-  ]);
+  const finalResults = rankRecipes([...dbResults, ...spoonResults]);
 
   res.json({
     success: true,
@@ -94,4 +93,103 @@ const searchRecipes = asyncHandler(async (req, res) => {
   });
 });
 
-export { searchRecipes };
+const dbSearchRecipes = asyncHandler(async (req, res) => {
+  const { query, page = 1, limit = 12 } = req.query;
+
+  const pageNum = Math.max(1, parseInt(page));
+  const pageSize = Math.min(50, parseInt(limit));
+
+  const user = await User.findById(req.user._id).lean();
+  if (!user) {
+    return res.status(404).json(new apiResponse(404, "User not found"));
+  }
+
+  const dietPreference = user.profile?.dietPreference;
+  const cookingSkill = user.profile?.cookingSkill;
+  const cuisines = user.preferences?.cuisines || [];
+  const budget = user.preferences?.budgetRange || {};
+
+  // =========================================================
+  // 🔥 2️⃣ BUILD FILTER FROM PROFILE
+  // =========================================================
+
+  const filter = {};
+
+  // ✅ Diet
+  if (dietPreference && dietPreference !== "Any") {
+    filter["metadata.dietType"] = dietPreference;
+  }
+
+  // ✅ Difficulty mapping (IMPORTANT FIX)
+  const difficultyMap = {
+    Beginner: ["Beginner"],
+    Intermediate: ["Beginner", "Intermediate"],
+    Expert: ["Beginner", "Intermediate", "Expert"],
+  };
+
+  if (cookingSkill) {
+    filter["metadata.difficulty"] = {
+      $in: difficultyMap[cookingSkill] || ["Beginner"],
+    };
+  }
+
+  // ✅ Cuisine
+  if (cuisines.length > 0) {
+    const lowerCuisines = cuisines.map((c) => c.toLowerCase());
+
+    filter.$or = [
+      { "metadata.cuisine": { $in: lowerCuisines } },
+      { tags: { $in: lowerCuisines } },
+    ];
+  }
+
+  // ✅ Budget
+  if (budget.min !== undefined || budget.max !== undefined) {
+    filter["metadata.costEstimate"] = {};
+
+    if (typeof budget.min === "number") {
+      filter["metadata.costEstimate"].$gte = budget.min;
+    }
+
+    if (typeof budget.max === "number") {
+      filter["metadata.costEstimate"].$lte = budget.max;
+    }
+
+    if (Object.keys(filter["metadata.costEstimate"]).length === 0) {
+      delete filter["metadata.costEstimate"];
+    }
+  }
+
+  const allergies = user.profile?.allergies || [];
+
+  if (allergies.length) {
+    filter.$nor = [
+      { "ingredients.name": { $in: allergies.map((a) => new RegExp(a, "i")) } },
+    ];
+  }
+
+  // ✅ Ensure valid recipes
+  filter.$and = [
+    { "ingredients.0": { $exists: true } },
+    { "steps.0": { $exists: true } },
+  ];
+
+  // =========================================================
+  // 1️⃣ DATABASE SEARCH
+  // =========================================================
+  const dbResults = await dbSearch({
+    query,
+    filter,
+    page: pageNum,
+    limit: pageSize,
+  });
+
+  res.json({
+    success: true,
+    source: "database",
+    count: dbResults.length,
+    data: rankRecipes(dbResults).slice(0, pageSize),
+  });
+});
+
+export { searchRecipes, dbSearchRecipes };
