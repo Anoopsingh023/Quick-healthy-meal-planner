@@ -25,7 +25,7 @@ export const spoonacularSearch = async ({ query, cuisine, limit }) => {
     const details = await Promise.all(
       results.map((r) =>
         axios.get(
-          `https://api.spoonacular.com/recipes/${r.id}/information?apiKey=${apiKey}`,
+          `https://api.spoonacular.com/recipes/${r.id}/information?includeNutrition=true&apiKey=${apiKey}`,
         ),
       ),
     );
