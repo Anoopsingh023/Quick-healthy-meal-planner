@@ -35,14 +35,14 @@ const SliderCard = ({ cards = [] }) => {
   const navigate = useNavigate();
 
   const dishes = [
-    { id: 1, img: indian, name: "Indian",tag: ["indian"] },
-    { id: 2, img: noodle, name: "Noodle", tag: ["noodle","maggie"] },
-    { id: 3, img: dosa, name: "Dosa",tag: ["dosa", "masala dosa"] },
+    // { id: 1, img: indian, name: "Indian",tag: ["indian"] },
     { id: 4, img: paneer, name: "Paneer" ,tag:[ "paneer"]},
-    { id: 5, img: cake, name: "Cake", tag:["cake", "bakery"] },
-    { id: 6, img: biryani, name: "Biryani", tag: ["biryani", "haidrabadi biryani"] },
-    { id: 7, img: pizza, name: "Pizza", tag: ["pizza"] },
     { id: 8, img: nonVeg, name: "Non Veg" ,tag: ["chicken", "mutton", "fish"]},
+    { id: 5, img: cake, name: "Cake", tag:["cake", "bakery"] },
+    { id: 2, img: noodle, name: "Noodle", tag: ["noodle","maggie"] },
+    { id: 7, img: pizza, name: "Pizza", tag: ["pizza"] },
+    { id: 6, img: biryani, name: "Biryani", tag: ["biryani", "haidrabadi biryani"] },
+    // { id: 3, img: dosa, name: "Dosa",tag: ["dosa", "masala dosa"] },
   ];
 
   const getRecipeFromDb = async (tagsArray) => {
