@@ -5,6 +5,8 @@ import {
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Recipe } from "../models/recipe.model.js";
 import crypto from "crypto";
+import { getEmbedding } from "../utils/embedding.js";
+import { createHash } from "../utils/hash.js";
 
 const normalizeDietType = (diet) => {
   if (!diet) return "Any";
@@ -97,19 +99,37 @@ const streamAIRecipes = asyncHandler(async (req, res) => {
   const savedRecipes = [];
   const imagePromises = []; // 👈 ADD THIS
 
+  let savedRecipe = null;
   for (let i = 0; i < recipes.length; i++) {
     const cleaned = cleanAIRecipe(recipes[i]);
+    const hash = createHash(
+      cleaned.title +
+        JSON.stringify(cleaned.ingredients) +
+        cleaned.metadata?.cuisine,
+    );
 
-    // 👇 dedup check before saving
-    const exists = await checkRecipeExists(cleaned);
+    let existing = await Recipe.findOne({ hash }).lean();
 
-    let savedRecipe = null;
+    if (existing) {
+      savedRecipes.push(existing);
+      continue;
+    }
 
-    if (!exists) {
-      const hash = generateRecipeHash(cleaned);
+    const text = `${cleaned.title} 
+          ${cleaned.description || ""} 
+          Cuisine: ${cleaned.metadata?.cuisine || ""} 
+          Diet: ${cleaned.metadata?.dietType || ""} 
+          Ingredients: ${cleaned.ingredients?.map((i) => i.name).join(", ")} 
+          Tags: ${cleaned.tags?.join(", ")}`;
+    const embedding = await getEmbedding(text);
+
+    if (!existing) {
+      // const hash = generateRecipeHash(cleaned);
 
       savedRecipe = await Recipe.create({
         ...cleaned,
+        hash,
+        embedding,
         image: null,
         hash,
         cacheKey, // store cache
@@ -159,11 +179,10 @@ const streamAIRecipes = asyncHandler(async (req, res) => {
   await Promise.all(imagePromises);
 
   // 🔥 extra DB check (important)
-await new Promise((r) => setTimeout(r, 300));
+  await new Promise((r) => setTimeout(r, 300));
 
   res.write("event: end\ndata: done\n\n");
   res.end();
 });
-
 
 export { streamAIRecipes };
