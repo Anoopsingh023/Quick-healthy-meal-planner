@@ -8,6 +8,28 @@ export const spoonacularSearch = async ({ query, cuisine, limit }) => {
   const apiKey = process.env.SPOONACULAR_API_KEY;
   if (!apiKey || !query) return [];
 
+  // ---------------- 🔥 PRE-FETCH USER DATA ----------------
+    let savedSet = new Set();
+    let likedSet = new Set();
+  
+    if (userId) {
+      const [user, likes] = await Promise.all([
+        User.findById(userId).select("savedRecipes"),
+        Like.find({
+          likedBy: userId,
+          targetType: "Recipe",
+        }).select("target"),
+      ]);
+  
+      if (user?.savedRecipes) {
+        savedSet = new Set(user.savedRecipes.map((id) => id.toString()));
+      }
+  
+      if (likes) {
+        likedSet = new Set(likes.map((l) => l.target.toString()));
+      }
+    }
+
   try {
     // 🔥 Step 1: search IDs
     const params = new URLSearchParams();
@@ -42,7 +64,7 @@ export const spoonacularSearch = async ({ query, cuisine, limit }) => {
           mapped.metadata?.cuisine,
       );
 
-      let existing = await Recipe.findOne({ hash });
+      let existing = await Recipe.findOne({ hash }).lean();
 
       if (existing) {
         savedRecipes.push(existing);
@@ -71,7 +93,32 @@ export const spoonacularSearch = async ({ query, cuisine, limit }) => {
       savedRecipes.push(newRecipe);
     }
 
-    return savedRecipes;
+    // return savedRecipes;
+    return savedRecipes.map((r) => ({
+      _id: r._id,
+      title: r.title,
+      image: r.image,
+
+      metadata: {
+        cuisine: r.metadata?.cuisine,
+        calories: r.metadata?.calories,
+        dietType: r.metadata?.dietType,
+        cookingTime: r.metadata?.cookingTime,
+        costEstimate: r.metadata?.costEstimate,
+      },
+
+      stats: {
+        rating: r.stats?.rating,
+      },
+      isSaved: savedSet.has(r._id.toString()),
+      isLiked: likedSet.has(r._id.toString()),
+
+      source: r.source,
+      isVerified: r.isVerified,
+
+      // optional UI flag
+      isLiked: false, // (can be updated later using userId)
+    }));
   } catch (err) {
     console.error("Spoonacular error:", err.message);
     return [];

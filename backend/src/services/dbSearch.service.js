@@ -1,6 +1,9 @@
 import { Recipe } from "../models/recipe.model.js";
 import { autoCorrectQuery } from "../utils/autocorrect.js";
 import { getEmbedding } from "../utils/embedding.js";
+import { Like } from "../models/PostModels/like.model.js";
+import mongoose from "mongoose";
+import { User } from "../models/user.model.js";
 
 const enhanceQuery = (query) => {
   return `
@@ -9,12 +12,34 @@ const enhanceQuery = (query) => {
   `;
 };
 
-export const dbSearch = async ({ query, filter, page, limit }) => {
+export const dbSearch = async ({ query, filter, page, limit, userId }) => {
   let semanticResults = [];
   let textResults = [];
   const cuisineArray = Array.isArray(filter?.["metadata.cuisine"]?.$in)
     ? filter["metadata.cuisine"].$in
     : [];
+
+  // ---------------- 🔥 PRE-FETCH USER DATA ----------------
+  let savedSet = new Set();
+  let likedSet = new Set();
+
+  if (userId) {
+    const [user, likes] = await Promise.all([
+      User.findById(userId).select("savedRecipes"),
+      Like.find({
+        likedBy: userId,
+        targetType: "Recipe",
+      }).select("target"),
+    ]);
+
+    if (user?.savedRecipes) {
+      savedSet = new Set(user.savedRecipes.map((id) => id.toString()));
+    }
+
+    if (likes) {
+      likedSet = new Set(likes.map((l) => l.target.toString()));
+    }
+  }
 
   // 🔥 SEMANTIC SEARCH
   if (query) {
@@ -26,7 +51,7 @@ export const dbSearch = async ({ query, filter, page, limit }) => {
       semanticResults = await Recipe.aggregate([
         {
           $vectorSearch: {
-            index: "default",
+            index: "vector_index",
             path: "embedding",
             queryVector,
             numCandidates: 50,
@@ -93,6 +118,56 @@ export const dbSearch = async ({ query, filter, page, limit }) => {
             },
           },
         },
+        {
+          $lookup: {
+            from: "likes",
+            let: { recipeId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$target", "$$recipeId"] },
+                      { $eq: ["$targetType", "Recipe"] },
+                      {
+                        $eq: ["$likedBy", new mongoose.Types.ObjectId(userId)],
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: "userLike",
+          },
+        },
+        {
+          $addFields: {
+            isLiked: { $gt: [{ $size: "$userLike" }, 0] },
+          },
+        },
+        {
+          $project: {
+            title: 1,
+            image: 1,
+            isVerified: 1,
+            // minimal metadata only
+            "metadata.cookingTime": 1,
+            "metadata.difficulty": 1,
+            "metadata.cuisine": 1,
+            "metadata.dietType": 1,
+            "metadata.calories": 1,
+            "metadata.costEstimate": 1,
+
+            // stats (for UI badges)
+            "stats.likes": 1,
+            "stats.saves": 1,
+            "stats.rating": 1,
+            popularityScore: 1,
+            qualityScore: 1,
+            finalScore: 1,
+            // isLiked: 1,
+          },
+        },
         { $sort: { finalScore: -1 } },
         { $skip: (page - 1) * limit },
         { $limit: limit },
@@ -103,14 +178,28 @@ export const dbSearch = async ({ query, filter, page, limit }) => {
   }
 
   // 🔥 TEXT SEARCH
-  if (semanticResults.length<limit && query) {
+  if (semanticResults.length < limit && query) {
     const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
     textResults = await Recipe.find({
       ...filter,
       $text: { $search: escaped },
     })
-      .select({ score: { $meta: "textScore" } })
+      .select({
+        title: 1,
+        image: 1,
+        isVerified: 1,
+        "metadata.cuisine": 1,
+        "metadata.dietType": 1,
+        "metadata.cookingTime": 1,
+        "metadata.costEstimate": 1,
+        "metadata.calories": 1,
+        "stats.likes": 1,
+        "stats.saves": 1,
+        "stats.rating": 1,
+        popularityScore: 1,
+        qualityScore: 1,
+      })
       .limit(limit)
       .sort({ score: { $meta: "textScore" } })
       .lean();
@@ -123,7 +212,19 @@ export const dbSearch = async ({ query, filter, page, limit }) => {
     map.set(r._id.toString(), r);
   });
 
-  return Array.from(map.values())
-  .sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0))
-  .slice(0, limit);;
+  // ---------------- 🔥 FINAL ENRICHMENT ----------------
+  const finalResults = Array.from(map.values())
+    .map((recipe) => ({
+      ...recipe,
+      isSaved: savedSet.has(recipe._id.toString()),
+      isLiked: likedSet.has(recipe._id.toString()),
+    }))
+    .sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0))
+    .slice(0, limit);
+
+  return finalResults;
+
+  // return Array.from(map.values())
+  //   .sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0))
+  //   .slice(0, limit);
 };
