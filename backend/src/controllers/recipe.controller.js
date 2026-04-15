@@ -183,7 +183,7 @@ const deleteRecipe = asyncHandler(async (req, res) => {
   if (recipe.createdBy.toString() !== req.user._id.toString()) {
     throw new apiError(403, "not authorized to delete this recipe");
   }
-  deleteImageFromCloudinary(recipe.image)
+  deleteImageFromCloudinary(recipe?.image)
 
   await recipe.deleteOne();
 
