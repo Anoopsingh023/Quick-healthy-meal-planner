@@ -93,6 +93,8 @@ const searchRecipes = asyncHandler(async (req, res) => {
   });
 });
 
+
+
 const dbSearchRecipes = asyncHandler(async (req, res) => {
   const { query, page = 1, limit = 12 } = req.query;
 
@@ -182,6 +184,7 @@ const dbSearchRecipes = asyncHandler(async (req, res) => {
     filter,
     page: pageNum,
     limit: pageSize,
+    userId: req.user?._id,
   });
 
   res.json({
