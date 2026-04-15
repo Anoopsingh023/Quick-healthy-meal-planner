@@ -73,8 +73,6 @@ const SearchResults = () => {
 
         let res;
 
-        
-
         if (mode === "ai") {
           isStreaming = true; // 👈 IMPORTANT
           const cacheKey = `aiRecipes-${query}`;
@@ -195,7 +193,7 @@ const SearchResults = () => {
         }
 
         const data = res?.data;
-        console.log("Normal search result",res.data)
+        console.log("Normal search result", res.data);
 
         // Try multiple common shapes and set results to an array
         if (Array.isArray(data)) {
@@ -232,9 +230,10 @@ const SearchResults = () => {
           "Failed to fetch search results";
         setError(message);
       } finally {
-        if (!isStreaming) { // 👈 FIX
-    setLoading(false);
-  }
+        if (!isStreaming) {
+          // 👈 FIX
+          setLoading(false);
+        }
       }
     };
 
@@ -256,6 +255,35 @@ const SearchResults = () => {
     search,
   ]);
 
+  const handleToggleSave = async (recipeId) => {
+    console.log("toggle called", recipeId);
+    // 🔥 1. Optimistic update
+    setResults((prev) =>
+      prev.map((r) => (r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r)),
+    );
+
+    try {
+      // 🔥 2. Call API
+      const res = await axios.post(
+        `${base_url}/users/me/toggle-save/${recipeId}`,
+        {},
+        {
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("token"),
+          },
+        },
+      );
+      console.log("toggle save recipe", res.data)
+    } catch (err) {
+      // ❌ 3. Revert if failed
+      setResults((prev) =>
+        prev.map((r) =>
+          r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r,
+        ),
+      );
+    }
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-4">
@@ -272,18 +300,25 @@ const SearchResults = () => {
 
       <div>
         {loading && results.length == 0 ? (
-          <div className="text-sm text-gray-600 animate-pulse">Generating recipes...</div>
+          <div className="text-sm text-gray-600 animate-pulse">
+            Generating recipes...
+          </div>
         ) : null}
       </div>
       <div>
         {loading && results.length > 0 && (
-          <div className="text-sm text-gray-500 animate-pulse">Generating more recipes...</div>
+          <div className="text-sm text-gray-500 animate-pulse">
+            Generating more recipes...
+          </div>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {results.map((r, i) => (
           <div key={r._id || r.id || i}>
-            <RecipeCard recipe={r} />
+            <RecipeCard 
+            recipe={r} 
+            onToggleSave={handleToggleSave} 
+            />
           </div>
         ))}
       </div>

@@ -21,7 +21,7 @@ const DbSearch = () => {
         setError(null);
 
         const res = await axios.get(`${base_url}/recipes/db-search`, {
-          params: params,
+          params: Object.fromEntries(params),
           headers: {
             Authorization: "Bearer " + localStorage.getItem("token"),
           },
@@ -49,10 +49,50 @@ const DbSearch = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [search]);
 
-  const handleRecipeClick = (recipe) => {
-    navigate(`/dashboard/${recipe._id}`);
+  const handleToggleSave = async (recipeId) => {
+    // 🔥 1. Optimistic update
+    setData((prev) => {
+    if (!prev || !Array.isArray(prev.data)) return prev;
+
+    return {
+      ...prev,
+      data: prev.data.map((r) =>
+        r._id === recipeId
+          ? { ...r, isSaved: !r.isSaved }
+          : r
+      ),
+    };
+  });
+
+    try {
+      const res = await axios.post(
+        `${base_url}/users/me/toggle-save/${recipeId}`,
+        {},
+        {
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("token"),
+          },
+        },
+      );
+
+      console.log("toggle save recipe", res.data);
+    } catch (err) {
+      // 🔁 revert safely
+    setData((prev) => {
+      if (!prev || !Array.isArray(prev.data)) return prev;
+
+      return {
+        ...prev,
+        data: prev.data.map((r) =>
+          r._id === recipeId
+            ? { ...r, isSaved: !r.isSaved }
+            : r
+        ),
+      };
+    });
+    }
   };
 
   return (
@@ -92,12 +132,13 @@ const DbSearch = () => {
 
       {!loading && data && data.data && data.data.length > 0 && (
         <>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             {data.data.map((r) => (
               <RecipeCard
                 key={r._id}
                 recipe={r}
-                onClick={() => handleRecipeClick(r)}
+                // onClick={() => handleRecipeClick(r)}
+                onToggleSave={handleToggleSave}
               />
             ))}
           </div>
