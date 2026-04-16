@@ -9,6 +9,7 @@ import {
 } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { Like } from "../models/PostModels/like.model.js";
 
 // --------------------- TOKEN GENERATION ---------------------
 const generateTokens = async (userId) => {
@@ -69,7 +70,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const options = { httpOnly: true, 
     secure: true, // false for localhost
-     sameSite: "None" // none for production(HTTPS)
+     sameSite: "none" // none for production(HTTPS)
     };
   return res
     .status(200)
@@ -337,15 +338,23 @@ const checkRecipeSaved = asyncHandler(async (req, res) => {
 });
 
 const getSavedRecipes = asyncHandler(async (req, res) => {
-  // Find user and populate saved recipe details
-  const user = await User.findById(req.user._id)
+  const userId = req.user._id;
+
+  const user = await User.findById(userId)
     .populate({
       path: "savedRecipes",
       model: "Recipe",
-      select:
-        "title image description ingredients metadata.dietType metadata.cuisine metadata.cookingTime metadata.difficulty metadata.calories metadata.costEstimate createdBy",
+      select: `
+        title image 
+        metadata.dietType 
+        metadata.cuisine 
+        metadata.cookingTime 
+        metadata.costEstimate
+        metadata.calories
+      `,
     })
-    .select("savedRecipes");
+    .select("savedRecipes")
+    .lean();
 
   if (!user) {
     throw new apiError(404, "User not found");
@@ -353,11 +362,33 @@ const getSavedRecipes = asyncHandler(async (req, res) => {
 
   const savedRecipes = user.savedRecipes || [];
 
-  res
-    .status(200)
-    .json(
-      new apiResponse(200, savedRecipes, "Saved recipes fetched successfully")
-    );
+  // 🔥 Get all liked recipes of user
+  const likes = await Like.find({
+    likedBy: userId,
+    targetType: "Recipe",
+  }).select("target").lean();
+
+  const likedSet = new Set(likes.map((l) => l.target.toString()));
+
+  // 🔥 Final mapping
+  const finalData = savedRecipes.map((r) => ({
+    _id: r._id,
+    title: r.title,
+    image: r.image,
+
+    metadata: r.metadata,
+
+    isSaved: true, // always true here
+    isLiked: likedSet.has(r._id.toString()),
+  }));
+
+  res.status(200).json(
+    new apiResponse(
+      200,
+      finalData,
+      "Saved recipes fetched successfully"
+    )
+  );
 });
 
 const removeSavedRecipe = asyncHandler(async (req, res) => {
