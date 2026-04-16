@@ -34,7 +34,7 @@ router.get("/re/:id", protect, getRecipeById);
 router.patch("/re/update/:id", protect,upload.single("image"), updateRecipe);
 router.delete("/re/delete/:id", protect, deleteRecipe);
 // Add this before getAllRecipes
-router.get("/search", searchRecipes);
+router.get("/search",protect, searchRecipes);
 router.get("/db-search",protect, dbSearchRecipes);
 router.get("/recommend",protect, getRecommendedRecipe);
 

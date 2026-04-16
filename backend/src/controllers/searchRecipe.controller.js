@@ -59,6 +59,7 @@ const searchRecipes = asyncHandler(async (req, res) => {
     filter,
     page: pageNum,
     limit: pageSize,
+    userId:req.user?._id
   });
 
   if (dbResults.length >= pageSize) {
@@ -78,6 +79,7 @@ const searchRecipes = asyncHandler(async (req, res) => {
     query,
     cuisine,
     limit: needed,
+    userId:req.user?._id
   });
 
   // =========================================================
@@ -92,8 +94,6 @@ const searchRecipes = asyncHandler(async (req, res) => {
     data: finalResults.slice(0, pageSize),
   });
 });
-
-
 
 const dbSearchRecipes = asyncHandler(async (req, res) => {
   const { query, page = 1, limit = 12 } = req.query;
@@ -190,8 +190,13 @@ const dbSearchRecipes = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     source: "database",
+    meta: {
+      page: pageNum,
+      limit: pageSize,
+      hasMore: dbResults.length === pageSize, // 🔥 KEY
+    },
     count: dbResults.length,
-    data: rankRecipes(dbResults).slice(0, pageSize),
+    data: rankRecipes(dbResults),
   });
 });
 

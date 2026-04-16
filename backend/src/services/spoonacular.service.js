@@ -3,8 +3,10 @@ import { Recipe } from "../models/recipe.model.js";
 import { mapSpoonacularToRecipe } from "../utils/mapper.js";
 import { getEmbedding } from "../utils/embedding.js";
 import { createHash } from "../utils/hash.js";
+import { User } from "../models/user.model.js";
+import { Like } from "../models/PostModels/like.model.js";
 
-export const spoonacularSearch = async ({ query, cuisine, limit }) => {
+export const spoonacularSearch = async ({ query, cuisine, limit, userId }) => {
   const apiKey = process.env.SPOONACULAR_API_KEY;
   if (!apiKey || !query) return [];
 
