@@ -5,6 +5,7 @@ import defaultImg from "../assets/recipe.jpg";
 import useSaveRecipe from "../hooks/useSaveRecipe";
 import axios from "axios";
 import { base_url } from "../utils/constant";
+import LazyImage from "./LazyImage";
 
 const RecipeCard = ({ recipe, onToggleSave = () => {} }) => {
   const navigate = useNavigate();
@@ -54,10 +55,16 @@ const RecipeCard = ({ recipe, onToggleSave = () => {} }) => {
     >
       {/* IMAGE */}
       <div className="relative h-52 overflow-hidden">
-        <img
+        {/* <img
           src={image}
           className="w-full h-full object-cover  transition-transform duration-500 group-hover:scale-110"
-        />
+        /> */}
+        <LazyImage
+  src={recipe.image}
+  alt={recipe.title}
+  // className="h-40 rounded-lg"
+  className="w-full h-full object-cover  transition-transform duration-500 group-hover:scale-110"
+/>
 
         {/* GRADIENT OVERLAY */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />

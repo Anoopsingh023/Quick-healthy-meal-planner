@@ -3,97 +3,116 @@ import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { base_url } from "../../utils/constant";
 import { BackButton, RecipeCard } from "../../shared";
+import { useRef } from "react";
 
 const DbSearch = () => {
   const { search } = useLocation();
-  const params = React.useMemo(() => new URLSearchParams(search), [search]);
+  const params = useMemo(() => new URLSearchParams(search), [search]);
+
   const query = (params.get("query") || "").trim();
-  const navigate = useNavigate();
-  const [data, setData] = useState(null);
+  const limit = Number(params.get("limit")) || 12;
+
+  const [recipes, setRecipes] = useState([]);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+
+  const observerRef = useRef(null);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
-    const fetchResults = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    fetchData();
+  }, [page, query, limit]);
 
-        const res = await axios.get(`${base_url}/recipes/db-search`, {
-          params: Object.fromEntries(params),
-          headers: {
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
-        });
-        console.log("Db search on result page", res.data);
+  const fetchData = async () => {
+    if (isFetchingRef.current) return; 
 
-        if (!cancelled) {
-          setData(res.data);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error("Search fetch error:", err);
-          setError(
-            err.response?.data?.message || err.message || "Failed to fetch",
-          );
-          setData(null);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchResults();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [search]);
-
-  const handleToggleSave = async (recipeId) => {
-    // 🔥 1. Optimistic update
-    setData((prev) => {
-    if (!prev || !Array.isArray(prev.data)) return prev;
-
-    return {
-      ...prev,
-      data: prev.data.map((r) =>
-        r._id === recipeId
-          ? { ...r, isSaved: !r.isSaved }
-          : r
-      ),
-    };
-  });
-
+    isFetchingRef.current = true;
     try {
-      const res = await axios.post(
-        `${base_url}/users/me/toggle-save/${recipeId}`,
-        {},
-        {
-          headers: {
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
+      setLoading(true);
+
+      const res = await axios.get(`${base_url}/recipes/db-search`, {
+        params: { query, page, limit },
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token"),
         },
-      );
+      });
+      console.log("DBSearch result", res.data);
 
-      console.log("toggle save recipe", res.data);
+      const newData = res.data.data || [];
+
+      setRecipes((prev) => {
+        const map = new Map();
+        [...prev, ...newData].forEach((r) => map.set(r._id, r));
+        return Array.from(map.values());
+      });
+
+      setHasMore(newData.length === limit); 
     } catch (err) {
-      // 🔁 revert safely
-    setData((prev) => {
-      if (!prev || !Array.isArray(prev.data)) return prev;
-
-      return {
-        ...prev,
-        data: prev.data.map((r) =>
-          r._id === recipeId
-            ? { ...r, isSaved: !r.isSaved }
-            : r
-        ),
-      };
-    });
+      console.error(err);
+    } finally {
+      setLoading(false);
+      isFetchingRef.current = false;
     }
   };
+
+
+  // 🔥 Reset
+  useEffect(() => {
+    setPage(1);
+    setRecipes([]);
+    setHasMore(true);
+    isFetchingRef.current = false;
+  }, [query]);
+
+  // 🔥 IntersectionObserver
+  // useEffect(() => {
+  //   if (loading) return;
+
+  //   const observer = new IntersectionObserver(
+  //     (entries) => {
+  //       if (entries[0].isIntersecting && hasMore && !fetching) {
+  //         setFetching(true);
+  //         setPage((prev) => prev + 1);
+  //       }
+  //     },
+  //     { rootMargin: "200px" },
+  //   );
+
+  //   if (observerRef.current) {
+  //     observer.observe(observerRef.current);
+  //   }
+
+  //   return () => observer.disconnect();
+  // }, [loading, hasMore, fetching]);
+
+  useEffect(() => {
+    const node = observerRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !isFetchingRef.current) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    observer.observe(node);
+
+    return () => {
+      observer.unobserve(node);
+    };
+  }, [hasMore]);
+
+  const SkeletonCard = () => (
+    <div className="animate-pulse bg-white rounded-xl p-3 shadow">
+      <div className="h-40 bg-gray-300 rounded-lg mb-3"></div>
+      <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+      <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+    </div>
+  );
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
@@ -114,36 +133,37 @@ const DbSearch = () => {
         </div>
       </div>
 
-      {/* Loading / Error */}
-      {loading && (
-        <div className="py-8 text-center text-zinc-500">Loading recipes…</div>
-      )}
-
-      {error && (
-        <div className="py-4 text-center text-red-500">Error: {error}</div>
-      )}
-
-      {/* Results */}
-      {!loading && data && data.data && data.data.length === 0 && (
-        <div className="py-8 text-center text-zinc-500">
-          No recipes found. Try different filters.
+      {/* Initial loading */}
+      {loading && recipes.length === 0 && (
+        <div className="grid grid-cols-3 gap-4 mt-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
       )}
 
-      {!loading && data && data.data && data.data.length > 0 && (
-        <>
-          <div className="grid grid-cols-3 gap-4">
-            {data.data.map((r) => (
-              <RecipeCard
-                key={r._id}
-                recipe={r}
-                // onClick={() => handleRecipeClick(r)}
-                onToggleSave={handleToggleSave}
-              />
-            ))}
-          </div>
-        </>
+      {/* Results */}
+      <div className="grid grid-cols-3 gap-4 mt-4">
+        {recipes.map((r) => (
+          <RecipeCard key={r._id} recipe={r} />
+        ))}
+      </div>
+
+      {/* Load more skeleton */}
+      {loading && recipes.length > 0 && (
+        <div className="grid grid-cols-3 gap-4 mt-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
       )}
+
+      {!hasMore && (
+        <p className="text-center mt-4 text-gray-500">No more recipes</p>
+      )}
+
+      {/* 🔥 Sentinel */}
+      <div ref={observerRef} className="h-10"></div>
     </div>
   );
 };
