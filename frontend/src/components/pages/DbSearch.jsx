@@ -106,6 +106,34 @@ const DbSearch = () => {
     };
   }, [hasMore]);
 
+  const handleToggleSave = async (recipeId) => {
+    // 🔥 1. Optimistic update
+    setRecipes((prev) =>
+      prev.map((r) => (r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r)),
+    );
+
+    try {
+      // 🔥 2. Call API
+      const res = await axios.post(
+        `${base_url}/users/me/toggle-save/${recipeId}`,
+        {},
+        {
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("token"),
+          },
+        },
+      );
+      console.log("toggle save recipe", res.data)
+    } catch (err) {
+      // ❌ 3. Revert if failed
+      setRecipes((prev) =>
+        prev.map((r) =>
+          r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r,
+        ),
+      );
+    }
+  };
+
   const SkeletonCard = () => (
     <div className="animate-pulse bg-white rounded-xl p-3 shadow">
       <div className="h-40 bg-gray-300 rounded-lg mb-3"></div>
@@ -145,7 +173,7 @@ const DbSearch = () => {
       {/* Results */}
       <div className="grid grid-cols-3 gap-4 mt-4">
         {recipes.map((r) => (
-          <RecipeCard key={r._id} recipe={r} />
+          <RecipeCard key={r._id} recipe={r} onToggleSave={handleToggleSave}  />
         ))}
       </div>
 

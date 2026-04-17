@@ -23,8 +23,6 @@ const RecipeCard = ({ recipe, onToggleSave = () => {} }) => {
     });
   };
 
-  
-
   const handleDelete = async (recipeId) => {
     try {
       const res = await axios.delete(
@@ -55,16 +53,11 @@ const RecipeCard = ({ recipe, onToggleSave = () => {} }) => {
     >
       {/* IMAGE */}
       <div className="relative h-52 overflow-hidden">
-        {/* <img
-          src={image}
-          className="w-full h-full object-cover  transition-transform duration-500 group-hover:scale-110"
-        /> */}
         <LazyImage
-  src={recipe.image}
-  alt={recipe.title}
-  // className="h-40 rounded-lg"
-  className="w-full h-full object-cover  transition-transform duration-500 group-hover:scale-110"
-/>
+          src={recipe.image}
+          alt={recipe.title}
+          className="w-full h-full object-cover  transition-transform duration-500 group-hover:scale-110"
+        />
 
         {/* GRADIENT OVERLAY */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -75,7 +68,7 @@ const RecipeCard = ({ recipe, onToggleSave = () => {} }) => {
             e.stopPropagation();
             onToggleSave(recipe?._id);
           }}
-          className="absolute top-3 right-3 bg-white/20 backdrop-blur-md p-2 rounded-full hover:bg-white/30 transition"
+          className="absolute top-3 right-3 bg-white/20 backdrop-blur-md p-2 rounded-full hover:bg-white/30 transition cursor-pointer"
         >
           {recipe?.isSaved ? "❤️" : "🤍"}
         </button>
