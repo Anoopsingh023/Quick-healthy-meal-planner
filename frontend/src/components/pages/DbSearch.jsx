@@ -26,59 +26,59 @@ const DbSearch = () => {
 
   const observerRef = useRef(null);
   const isFetchingRef = useRef(false);
+  const hasMountedRef = useRef(false);
+const isCacheHydratedRef = useRef(false);
 
-  // =========================
-  // 🔥 LOAD FROM CACHE
-  // =========================
+
+  // LOAD FROM CACHE
   useEffect(() => {
-    // 1️⃣ Memory cache
-    if (searchCache[cacheKey]) {
-      const cached = searchCache[cacheKey];
+    const memoryCache = searchCache[cacheKey];
+    const sessionCache = sessionStorage.getItem(cacheKey);
+
+    if (memoryCache || sessionCache) {
+      const cached = memoryCache || JSON.parse(sessionCache);
 
       setRecipes(cached.recipes);
       setPage(cached.page);
       setHasMore(cached.hasMore);
 
-      console.log("⚡ Memory cache hit");
-      // return;
+      isCacheHydratedRef.current = true;
+
+      console.log("⚡ Cache hit",searchCache[cacheKey]);
+    } else {
+      setRecipes([]);
+      setPage(1);
+      setHasMore(true);
+      isCacheHydratedRef.current = false;
     }
-
-    // 2️⃣ Session storage
-    else if (sessionStorage.getItem(cacheKey)) {
-      const stored = sessionStorage.getItem(cacheKey);
-      const parsed = JSON.parse(stored);
-
-      setRecipes(parsed.recipes);
-      setPage(parsed.page);
-      setHasMore(parsed.hasMore);
-
-      searchCache[cacheKey] = parsed;
-
-      console.log("⚡ Session cache hit");
-      // return;
-    }
-
-    // ❌ No cache → fresh load
-    // fetchData(1, true);
-    else {
-      setPage(1); // 🔥 triggers fetch
-    }
+    hasMountedRef.current = false;
   }, [cacheKey]);
 
-  useEffect(() => {
-    fetchData(page);
-  }, [page]);
 
-  // =========================
-  // 🔥 FETCH FUNCTION
-  // =========================
-  const fetchData = async (pageToFetch = page, isFresh = false) => {
-    if (isFetchingRef.current) return;
+  useEffect(() => {
+  if (!hasMountedRef.current) {
+    hasMountedRef.current = true;
+
+    if (isCacheHydratedRef.current) {
+      console.log("⛔ Skipping API (cache used)");
+      return;
+    }
+  }
+
+  fetchData(page);
+}, [page]);
+
+
+  // FETCH FUNCTION
+  const fetchData = async (pageToFetch = page, ) => {
+    if (isFetchingRef.current || !hasMore) return;
 
     isFetchingRef.current = true;
 
     try {
       setLoading(true);
+      console.log("🚀 API CALL page:", pageToFetch);
+      const startTime = performance.now();
 
       const res = await axios.get(`${base_url}/recipes/db-search`, {
         params: { query, page: pageToFetch, limit },
@@ -86,15 +86,17 @@ const DbSearch = () => {
           Authorization: "Bearer " + localStorage.getItem("token"),
         },
       });
+      const endTime = performance.now();
+
+      console.log(`🚀 API Time: ${(endTime - startTime).toFixed(2)} ms`);
 
       const newData = res.data.data || [];
-      console.log("DbSearch result",res.data)
+      console.log("DbSearch api called", res.data);
 
       setRecipes((prev) => {
-        const base = isFresh ? [] : prev;
 
         const map = new Map();
-        [...base, ...newData].forEach((r) => map.set(r._id, r));
+        [...prev, ...newData].forEach((r) => map.set(r._id, r));
 
         const updated = Array.from(map.values());
 
@@ -112,7 +114,6 @@ const DbSearch = () => {
       });
 
       setHasMore(newData.length === limit);
-      // setPage(pageToFetch);
     } catch (err) {
       console.error(err);
     } finally {
@@ -121,17 +122,8 @@ const DbSearch = () => {
     }
   };
 
-  // =========================
-  // 🔥 LOAD NEXT PAGE
-  // =========================
-  useEffect(() => {
-    if (page === 1) return; // first page handled separately
-    fetchData(page);
-  }, [page]);
 
-  // =========================
-  // 🔥 OBSERVER (INFINITE SCROLL)
-  // =========================
+  // OBSERVER (INFINITE SCROLL)
   useEffect(() => {
     const node = observerRef.current;
     if (!node) return;
@@ -139,10 +131,11 @@ const DbSearch = () => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && hasMore && !isFetchingRef.current) {
+          console.log("📄 Next page");
           setPage((prev) => prev + 1);
         }
       },
-      { rootMargin: "300px" },
+      { rootMargin: "400px" },
     );
 
     observer.observe(node);
@@ -150,30 +143,8 @@ const DbSearch = () => {
     return () => observer.unobserve(node);
   }, [hasMore]);
 
-  // =========================
-  // 🔥 SCROLL POSITION RESTORE
-  // =========================
-  useEffect(() => {
-    const saved = sessionStorage.getItem(`${cacheKey}-scroll`);
-    if (saved) {
-      setTimeout(() => {
-        window.scrollTo(0, Number(saved));
-      }, 100);
-    }
-  }, [cacheKey]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      sessionStorage.setItem(`${cacheKey}-scroll`, window.scrollY.toString());
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [cacheKey]);
-
-  // =========================
-  // 🔥 SAVE / UNSAVE
-  // =========================
+  
+  // SAVE / UNSAVE
   const handleToggleSave = async (recipeId) => {
     setRecipes((prev) =>
       prev.map((r) => (r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r)),
@@ -206,9 +177,8 @@ const DbSearch = () => {
     isFetchingRef.current = false;
   }, [query]);
 
-  // =========================
-  // 🔥 SKELETON
-  // =========================
+  
+  // SKELETON
   const SkeletonCard = () => (
     <div className="animate-pulse bg-white rounded-xl p-3 shadow">
       <div className="h-40 bg-gray-300 rounded-lg mb-3"></div>
@@ -217,9 +187,8 @@ const DbSearch = () => {
     </div>
   );
 
-  // =========================
+  
   // UI
-  // =========================
   return (
     <div className="p-4 max-w-6xl mx-auto">
       <div className="mb-4 flex items-center justify-between">
