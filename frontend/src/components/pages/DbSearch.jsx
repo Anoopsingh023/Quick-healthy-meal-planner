@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { base_url } from "../../utils/constant";
 import { BackButton, RecipeCard } from "../../shared";
-import { useRef } from "react";
+
+// 🔥 GLOBAL MEMORY CACHE
+const searchCache = {};
 
 const DbSearch = () => {
   const { search } = useLocation();
@@ -11,6 +13,11 @@ const DbSearch = () => {
 
   const query = (params.get("query") || "").trim();
   const limit = Number(params.get("limit")) || 12;
+
+  // 🔑 CACHE KEY
+  const cacheKey = useMemo(() => {
+    return `dbsearch-${query}-limit-${limit}`;
+  }, [query, limit]);
 
   const [recipes, setRecipes] = useState([]);
   const [page, setPage] = useState(1);
@@ -20,34 +27,92 @@ const DbSearch = () => {
   const observerRef = useRef(null);
   const isFetchingRef = useRef(false);
 
+  // =========================
+  // 🔥 LOAD FROM CACHE
+  // =========================
   useEffect(() => {
-    fetchData();
-  }, [page, query, limit]);
+    // 1️⃣ Memory cache
+    if (searchCache[cacheKey]) {
+      const cached = searchCache[cacheKey];
 
-  const fetchData = async () => {
-    if (isFetchingRef.current) return; 
+      setRecipes(cached.recipes);
+      setPage(cached.page);
+      setHasMore(cached.hasMore);
+
+      console.log("⚡ Memory cache hit");
+      // return;
+    }
+
+    // 2️⃣ Session storage
+    else if (sessionStorage.getItem(cacheKey)) {
+      const stored = sessionStorage.getItem(cacheKey);
+      const parsed = JSON.parse(stored);
+
+      setRecipes(parsed.recipes);
+      setPage(parsed.page);
+      setHasMore(parsed.hasMore);
+
+      searchCache[cacheKey] = parsed;
+
+      console.log("⚡ Session cache hit");
+      // return;
+    }
+
+    // ❌ No cache → fresh load
+    // fetchData(1, true);
+    else {
+      setPage(1); // 🔥 triggers fetch
+    }
+  }, [cacheKey]);
+
+  useEffect(() => {
+    fetchData(page);
+  }, [page]);
+
+  // =========================
+  // 🔥 FETCH FUNCTION
+  // =========================
+  const fetchData = async (pageToFetch = page, isFresh = false) => {
+    if (isFetchingRef.current) return;
 
     isFetchingRef.current = true;
+
     try {
       setLoading(true);
 
       const res = await axios.get(`${base_url}/recipes/db-search`, {
-        params: { query, page, limit },
+        params: { query, page: pageToFetch, limit },
         headers: {
           Authorization: "Bearer " + localStorage.getItem("token"),
         },
       });
-      console.log("DBSearch result", res.data);
 
       const newData = res.data.data || [];
+      console.log("DbSearch result",res.data)
 
       setRecipes((prev) => {
+        const base = isFresh ? [] : prev;
+
         const map = new Map();
-        [...prev, ...newData].forEach((r) => map.set(r._id, r));
-        return Array.from(map.values());
+        [...base, ...newData].forEach((r) => map.set(r._id, r));
+
+        const updated = Array.from(map.values());
+
+        // 🔥 SAVE CACHE
+        const cacheData = {
+          recipes: updated,
+          page: pageToFetch,
+          hasMore: newData.length === limit,
+        };
+
+        searchCache[cacheKey] = cacheData;
+        sessionStorage.setItem(cacheKey, JSON.stringify(cacheData));
+
+        return updated;
       });
 
-      setHasMore(newData.length === limit); 
+      setHasMore(newData.length === limit);
+      // setPage(pageToFetch);
     } catch (err) {
       console.error(err);
     } finally {
@@ -56,36 +121,17 @@ const DbSearch = () => {
     }
   };
 
-
-  // 🔥 Reset
+  // =========================
+  // 🔥 LOAD NEXT PAGE
+  // =========================
   useEffect(() => {
-    setPage(1);
-    setRecipes([]);
-    setHasMore(true);
-    isFetchingRef.current = false;
-  }, [query]);
+    if (page === 1) return; // first page handled separately
+    fetchData(page);
+  }, [page]);
 
-  // 🔥 IntersectionObserver
-  // useEffect(() => {
-  //   if (loading) return;
-
-  //   const observer = new IntersectionObserver(
-  //     (entries) => {
-  //       if (entries[0].isIntersecting && hasMore && !fetching) {
-  //         setFetching(true);
-  //         setPage((prev) => prev + 1);
-  //       }
-  //     },
-  //     { rootMargin: "200px" },
-  //   );
-
-  //   if (observerRef.current) {
-  //     observer.observe(observerRef.current);
-  //   }
-
-  //   return () => observer.disconnect();
-  // }, [loading, hasMore, fetching]);
-
+  // =========================
+  // 🔥 OBSERVER (INFINITE SCROLL)
+  // =========================
   useEffect(() => {
     const node = observerRef.current;
     if (!node) return;
@@ -96,25 +142,45 @@ const DbSearch = () => {
           setPage((prev) => prev + 1);
         }
       },
-      { rootMargin: "200px" },
+      { rootMargin: "300px" },
     );
 
     observer.observe(node);
 
-    return () => {
-      observer.unobserve(node);
-    };
+    return () => observer.unobserve(node);
   }, [hasMore]);
 
+  // =========================
+  // 🔥 SCROLL POSITION RESTORE
+  // =========================
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`${cacheKey}-scroll`);
+    if (saved) {
+      setTimeout(() => {
+        window.scrollTo(0, Number(saved));
+      }, 100);
+    }
+  }, [cacheKey]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      sessionStorage.setItem(`${cacheKey}-scroll`, window.scrollY.toString());
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [cacheKey]);
+
+  // =========================
+  // 🔥 SAVE / UNSAVE
+  // =========================
   const handleToggleSave = async (recipeId) => {
-    // 🔥 1. Optimistic update
     setRecipes((prev) =>
       prev.map((r) => (r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r)),
     );
 
     try {
-      // 🔥 2. Call API
-      const res = await axios.post(
+      await axios.post(
         `${base_url}/users/me/toggle-save/${recipeId}`,
         {},
         {
@@ -123,9 +189,8 @@ const DbSearch = () => {
           },
         },
       );
-      console.log("toggle save recipe", res.data)
     } catch (err) {
-      // ❌ 3. Revert if failed
+      // revert
       setRecipes((prev) =>
         prev.map((r) =>
           r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r,
@@ -134,6 +199,16 @@ const DbSearch = () => {
     }
   };
 
+  useEffect(() => {
+    setRecipes([]);
+    setPage(1);
+    setHasMore(true);
+    isFetchingRef.current = false;
+  }, [query]);
+
+  // =========================
+  // 🔥 SKELETON
+  // =========================
   const SkeletonCard = () => (
     <div className="animate-pulse bg-white rounded-xl p-3 shadow">
       <div className="h-40 bg-gray-300 rounded-lg mb-3"></div>
@@ -142,23 +217,17 @@ const DbSearch = () => {
     </div>
   );
 
+  // =========================
+  // UI
+  // =========================
   return (
     <div className="p-4 max-w-6xl mx-auto">
       <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold">
-            Search results{" "}
-            {query ? (
-              <>
-                for <span className="text-green-600">"{query}"</span>
-              </>
-            ) : null}
-          </h2>
-        </div>
-
-        <div>
-          <BackButton />
-        </div>
+        <h2 className="text-2xl font-semibold">
+          Search results{" "}
+          {query && <span className="text-green-600">"{query}"</span>}
+        </h2>
+        <BackButton />
       </div>
 
       {/* Initial loading */}
@@ -173,7 +242,7 @@ const DbSearch = () => {
       {/* Results */}
       <div className="grid grid-cols-3 gap-4 mt-4">
         {recipes.map((r) => (
-          <RecipeCard key={r._id} recipe={r} onToggleSave={handleToggleSave}  />
+          <RecipeCard key={r._id} recipe={r} onToggleSave={handleToggleSave} />
         ))}
       </div>
 
@@ -190,7 +259,7 @@ const DbSearch = () => {
         <p className="text-center mt-4 text-gray-500">No more recipes</p>
       )}
 
-      {/* 🔥 Sentinel */}
+      {/* Sentinel */}
       <div ref={observerRef} className="h-10"></div>
     </div>
   );
