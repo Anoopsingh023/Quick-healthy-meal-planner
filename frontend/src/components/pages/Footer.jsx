@@ -41,10 +41,10 @@ const Footer = () => {
         <div className="flex flex-col gap-4 cursor-pointer">
           <h3 className="text-xl font-semibold text-black cursor-text">Social Links</h3>
           <div className="flex flex-row gap-5">
-            <Link to={"https://www.instagram.com/anoop_singh_2026/"}><i class="fa-brands fa-square-instagram"></i></Link>
-            <Link to={""}><i class="fa-brands fa-facebook"></i></Link>
-            <Link to={"https://www.linkedin.com/in/anoop-kumar-singh-8a37a4227/"}><i class="fa-brands fa-linkedin"></i></Link>
-            <Link to={"https://x.com/anoop_0x01"}><i class="fa-brands fa-square-twitter"></i></Link>
+            <Link to={"https://www.instagram.com/anoop_singh_2026/"}><i className="fa-brands fa-square-instagram"></i></Link>
+            <Link to={""}><i className="fa-brands fa-facebook"></i></Link>
+            <Link to={"https://www.linkedin.com/in/anoop-kumar-singh-8a37a4227/"}><i className="fa-brands fa-linkedin"></i></Link>
+            <Link to={"https://x.com/anoop_0x01"}><i className="fa-brands fa-square-twitter"></i></Link>
           </div>
         </div>
       </div>
