@@ -70,7 +70,6 @@ const userSchema = new Schema(
       cookedCount: { type: Number, default: 0 },
     },
     savedRecipes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Recipe" }],
-    shoppingList: [{ type: String }], // items to buy
     refreshToken: {
       type: String,
     },

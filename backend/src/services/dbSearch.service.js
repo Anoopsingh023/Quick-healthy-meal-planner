@@ -223,8 +223,4 @@ export const dbSearch = async ({ query, filter, page, limit, userId }) => {
     .slice(0, limit);
 
   return finalResults;
-
-  // return Array.from(map.values())
-  //   .sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0))
-  //   .slice(0, limit);
 };
