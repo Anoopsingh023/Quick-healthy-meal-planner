@@ -36,7 +36,8 @@ const DbSearch = () => {
     const memoryCache = searchCache[cacheKey];
     const raw = sessionStorage.getItem(cacheKey);
     const sessionCache = raw ? JSON.parse(raw) : null;
-    const cached = memoryCache || sessionCache;
+    // const cached = memoryCache || sessionCache;
+    const cached = null
 
     if (cached) {
       console.log("⚡ Cache hit for", cacheKey);
@@ -93,7 +94,7 @@ const DbSearch = () => {
       }
 
       const newData = res.data.data || [];
-      console.log("Dbsearch api call",newData)
+      console.log("Dbsearch api call",res.data)
 
       setRecipes((prev) => {
         const map = new Map();
