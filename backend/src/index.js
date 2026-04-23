@@ -6,6 +6,7 @@ import { getEmbedding } from "./utils/embedding.js";
 import { buildDictionary, initAutoCorrect } from "./utils/autocorrect.js";
 import { buildSuggestions } from "./utils/suggestions.js";
 import { Recipe } from "./models/recipe.model.js";
+import { connectRedis } from "./config/redisClient.js";
 
 dotenv.config({
   path: "./env",
@@ -22,6 +23,8 @@ connectDb()
   .catch(() => {
     console.log("MongoDB connection failed !!!");
   });
+
+connectRedis();
 
 
 (async () => {
@@ -46,4 +49,6 @@ connectDb()
 
   await buildSuggestions(recipes);
 })();
+
+
 
