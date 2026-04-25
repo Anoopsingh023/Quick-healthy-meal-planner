@@ -1,4 +1,3 @@
-// pages/ShoppingList.jsx
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Ingredients from "../../shared/Ingredients";
@@ -10,16 +9,8 @@ import BackButton from "../../shared/BackButton";
 const API_URL = `${base_url}/shopinglists`;
 
 const fetchListFromServer = async (signal) => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw { code: "NO_TOKEN", message: "No auth token in localStorage" };
-  }
-
   const res = await axios.get(`${API_URL}/`, {
-    headers: {
-      Authorization: "Bearer " + token,
-      "Content-Type": "application/json",
-    },
+    withCredentials: true,
     signal, // abort support
   });
   console.log("shopping list",res.data)
@@ -38,10 +29,7 @@ const addItemApi = async (item) => {
   };
 
   const res = await axios.post(`${API_URL}/add`, payload, {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token"),
-      "Content-Type": "application/json",
-    },
+    withCredentials: true,
   });
   console.log("Add item in shopping list", res.data);
 
@@ -55,10 +43,7 @@ const updateItemApi = async (itemId, patch) => {
       `${API_URL}/update/${itemId}`,
       patch, // <-- send the patch object as the request body
       {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-          "Content-Type": "application/json",
-        },
+        withCredentials: true
       }
     );
     // res.data is parsed JSON from axios
@@ -79,10 +64,7 @@ const togglePurchaseApi = async (itemId, patch) => {
       `${API_URL}/toggle/${itemId}`,
       patch, // <-- send the patch object as the request body
       {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-          "Content-Type": "application/json",
-        },
+        withCredentials: true
       }
     );
     // res.data is parsed JSON from axios
@@ -99,10 +81,7 @@ const togglePurchaseApi = async (itemId, patch) => {
 
 const removeItemApi = async (itemId) => {
   const res = await axios.delete(`${API_URL}/remove/${itemId}`, {
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token"),
-      "Content-Type": "application/json",
-    },
+    withCredentials: true
   });
   console.log("remove item from shopping list", res.data);
 

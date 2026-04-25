@@ -13,9 +13,7 @@ export const fetchSuggestions = async (query, signal) => {
   try {
     const res = await axios.get(`${base_url}/searches/suggestions`, {
       params: { query, limit: 8 }, // limit optional; adjust to your controller
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      withCredentials: true,
       signal,
     });
 

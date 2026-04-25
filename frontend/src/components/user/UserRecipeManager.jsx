@@ -150,9 +150,7 @@ const UserRecipeManager = () => {
   const fetchRecipes = async () => {
     try {
       const res = await axios.get(`${base_url}/recipes`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        withCredentials: true
       });
       console.log("Get user recipe", res.data);
       setRecipes(res.data.data.data);
@@ -237,20 +235,14 @@ const UserRecipeManager = () => {
           `${base_url}/recipes/re/update/${editingRecipe._id}`,
           formData,
           {
-            headers: {
-              Authorization: "Bearer " + localStorage.getItem("token"),
-              "Content-Type": "multipart/form-data",
-            },
+            withCredentials: true
           }
         );
         console.log("updated recipe", res.data);
       } else {
         // ✅ CREATE RECIPE
         const res = await axios.post(`${base_url}/recipes/create`, formData, {
-          headers: {
-            Authorization: "Bearer " + localStorage.getItem("token"),
-            "Content-Type": "multipart/form-data",
-          },
+          withCredentials: true
         });
         console.log("added recipe", res.data);
       }
@@ -302,9 +294,7 @@ const UserRecipeManager = () => {
 
     try {
       const res = await axios.delete(`${base_url}/recipes/re/delete/${id}`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        withCredentials: true
       });
       console.log("Recipe deleted", res.data);
       fetchRecipes();

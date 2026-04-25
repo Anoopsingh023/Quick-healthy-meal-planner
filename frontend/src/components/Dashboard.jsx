@@ -21,26 +21,7 @@ const Dashboard = () => {
       <aside
         className={`fixed top-0 left-0 bottom-0 z-50 transition-all duration-300 bg-[#042d52] shadow-lg w-22 }`}
       >
-        <Sidebar
-          // isCollapsed={isSidebarCollapsed}
-        />
-        {/* {isSidebarCollapsed ? (
-          <div
-            onClick={toggleSidebar}
-            className="pt-3 pl-3 w-10 h-12 border-l border-t border-b border-[#bfcbd6] text-[#bfcbd6] cursor-pointer rounded-l-md duration-300
-             shadow-[0_4px_12px_rgba(0,0,0,0.4),0_2px_6px_rgba(4,45,82,0.4)]
-             relative -top-85 -right-10"
-          >
-            <i class="fa-solid fa-angles-right"></i>
-          </div>
-        ) : (
-          <div
-            onClick={toggleSidebar}
-            className="pt-3 pl-3 w-10 h-12 border-l border-t border-b relative -top-85 -right-54 border-[#bfcbd6] text-[#bfcbd6] cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.4),0_2px_6px_rgba(4,45,82,0.4)] rounded-l-md duration-300"
-          >
-            <i class="fa-solid fa-angles-left"></i>
-          </div>
-        )} */}
+        <Sidebar/>
       </aside>
 
       {/* Navbar (below sidebar visually) */}
@@ -59,7 +40,6 @@ const Dashboard = () => {
       <main
         className={`transition-all duration-300 overflow-y-auto ml-20`}
         style={{
-          // marginLeft: isSidebarCollapsed ? 75 : 268, // same as sidebar width
           paddingTop: NAVBAR_HEIGHT,
           minHeight: "100vh",
         }}

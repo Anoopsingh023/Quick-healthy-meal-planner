@@ -11,9 +11,7 @@ const useSaveRecipe = (recipeId) => {
         `${base_url}/users/me/toggle-save/${recipeId}`,
         {},
         {
-          headers: {
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
+          withCredentials: true,
         }
       );
       console.log("Recipe Saved", res.data);
@@ -26,9 +24,7 @@ const useSaveRecipe = (recipeId) => {
   const isRecipeSaved = async (recipeId) => {
     try {
       const res = await axios.get(`${base_url}/users/is-saved/${recipeId}`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        withCredentials: true,
       });
       console.log("Is Recipe Saved", res.data);
       setIsSaved(res.data.data.isSaved);

@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
-const Navbar = ({ onSearch, onToggleSidebar, isSidebarCollapsed }) => {
+const Navbar = ({ onSearch, onToggleSidebar }) => {
   const navigate = useNavigate();
-  const [logedin, setLogedin] = useState(false);
+  const { user, logout, isAuthenticated } = useAuth();
+
   const [open, setOpen] = useState(false);
   const [openSearchInput, setOpenSearchInput] = useState(false);
+
   const dropdownRef = useRef();
 
-  useEffect(() => {
-    if (localStorage.getItem("token")) setLogedin(true);
-  }, []);
-
+  // ---------------- CLOSE DROPDOWN ON OUTSIDE CLICK ----------------
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -24,123 +24,126 @@ const Navbar = ({ onSearch, onToggleSidebar, isSidebarCollapsed }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleMenuClick = (menu) => {
+  // ---------------- MENU HANDLER ----------------
+  const handleMenuClick = async (menu) => {
     setOpen(false);
-    if (menu === "Your Profile") {
-       navigate("/dashboard/user-profile")
-      // window.open(`/channel/${localStorage.getItem("userName")}`, "_blank");
-    } else if (menu === "Logout") {
-      // perform logout flow or call API
-      ["token", "userId", "userName", "avatar", "coverImage", "name"].forEach(
-        (item) => localStorage.removeItem(item)
-      );
-      setLogedin(false);
-      window.location.href = "/dashboard";
+
+    switch (menu) {
+      case "Profile":
+        navigate("/dashboard/user-profile");
+        break;
+
+      case "Logout":
+        await logout();
+        navigate("/login");
+        break;
+
+      default:
+        break;
     }
   };
 
+  // ---------------- SEARCH ----------------
   const handleSearchInput = (e) => {
     const query = e.target.value;
     if (onSearch) onSearch(query);
   };
 
-  const handleFeedbackClick = () => {
-    navigate(`/dashboard/feedback`);
-  };
-
   return (
     <nav className="flex items-center justify-between px-5 py-3 bg-[#b7b7b7]">
-      {openSearchInput ? (
-        // Full-width search view
-        <div className="flex items-center w-full gap-2">
-          <ArrowLeft onClick={() => setOpenSearchInput(false)} size={22} className="cursor-pointer" />
-          <input
-            autoFocus
-            className=" w-full px-5 py-2 my-5 border rounded-2xl"
-            type="text"
-            placeholder="Search"
-            onChange={handleSearchInput}
+      {/* LEFT SIDE */}
+      <div className="flex items-center gap-3">
+        <span className="hidden sm:block">
+          <i
+            onClick={onToggleSidebar}
+            className="fa-solid fa-bars hover:bg-gray-200 p-3 cursor-pointer rounded-full"
           />
-        </div>
-      ) : (
-        <>
-          {/* Left Side */}
-          <div className="flex items-center gap-2">
-            {/* Sidebar Toggle */}
-            <span className="hidden sm:block">
-              <i
-                onClick={onToggleSidebar}
-                className="fa-solid fa-bars hover:bg-[#3b3b3b] p-3 cursor-pointer rounded-full"
-              />
-            </span>
+        </span>
+        <h2
+          className="font-bold text-3xl ml-15 text-[#0b7b2a] cursor-pointer"
+          onClick={() => navigate("/dashboard")}
+        >
+          Cooklio
+        </h2>
+      </div>
 
-            {/* Show app name in navbar ONLY when sidebar is collapsed */}
-            {/* {isSidebarCollapsed && ( */}
-              <h2 className="font-bold ml-15 text-3xl text-[#0b7b2a] ">Cooklio</h2>
-            {/* )} */}
+      {/* CENTER */}
+      <marquee className="text-lg w-3xl text-gray-600 hidden md:block">
+        Type what you have. Cook what you can 🍳
+      </marquee>
+
+      {/* RIGHT SIDE */}
+      {isAuthenticated ? (
+        <div className="flex items-center gap-4">
+          {/* Feedback */}
+          <button
+            onClick={() => navigate("/dashboard/feedback")}
+            className="border border-[#6f6d6d] py-2 px-3 rounded-full cursor-pointer  hover:bg-[#61616166]"
+          >
+            Feedback
+          </button>
+
+          {/* USER AVATAR */}
+          <div ref={dropdownRef} className="relative">
+            <img
+              onClick={() => setOpen((o) => !o)}
+              className="h-10 w-10 rounded-full cursor-pointer object-cover"
+              src={user?.avatar}
+              alt="avatar"
+            />
+
+            {open && (
+              <div className="bg-[#042e52] text-white absolute w-56 z-50 -left-45 top-14 p-4 rounded-xl shadow-xl">
+                <div className="px-3 py-2 border-b text-sm ">
+                  {user?.fullName}
+                </div>
+
+                <ul>
+                  {["Profile", "Logout"].map((item, idx) => (
+                    <li
+                      key={idx}
+                      onClick={() => handleMenuClick(item)}
+                      className="px-3 py-2 hover:bg-[#08527d] rounded-lg cursor-pointer text-sm"
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
-          <marquee behavior="" direction="" className="text-2xl w-3xl">Type what you have. Cook what you can</marquee>
+          {/* MOBILE SEARCH */}
+          <span className="sm:hidden">
+            <i
+              onClick={() => setOpenSearchInput(true)}
+              className="fa fa-search text-xl cursor-pointer"
+            />
+          </span>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate("/dashboard/feedback")}
+            className="px-3 py-1 border rounded-full text-sm hover:bg-gray-100"
+          >
+            Feedback
+          </button>
 
-          {/* Right Side */}
-          {logedin ? (
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleFeedbackClick}
-                className="border border-[#6f6d6d] bg-[#232323] py-2 px-3 rounded-full cursor-pointer text-blue-400 hover:bg-[#4c9ed566]"
-              >
-                Feedback
-              </button>
+          <Link
+            to="/login"
+            className="px-4 py-1 rounded-full bg-[#042d52] text-white text-sm hover:opacity-90"
+          >
+            Sign in
+          </Link>
 
-              <div ref={dropdownRef} className="relative">
-                <img
-                  onClick={() => setOpen((o) => !o)}
-                  className="h-12 w-12 rounded-full cursor-pointer"
-                  src={localStorage.getItem("avatar")}
-                  alt="avatar"
-                />
-                {open && (
-                  <div className="bg-[#042e52] text-white absolute w-56 z-50 -left-45 top-14 p-4 rounded-xl shadow-xl">
-                    
-                    <ul>
-                      {["Your Profile", "Theme", "Help", "Logout"].map((menu, index) => (
-                        <li
-                          key={index}
-                          onClick={() => handleMenuClick(menu)}
-                          className="py-2 px-4 hover:bg-[#08527d] rounded-xl cursor-pointer"
-                        >
-                          {menu}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {/* Mobile search icon */}
-              <span className="sm:hidden">
-                <i onClick={() => setOpenSearchInput(true)} className="fa fa-search text-xl cursor-pointer" />
-              </span>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={handleFeedbackClick}
-                className="border border-[#6f6d6d] bg-[#232323] py-2 px-3 rounded-full cursor-pointer text-blue-400 hover:bg-[#4c9ed566]"
-              >
-                Feedback
-              </button>
-
-              <Link to="/login" className="border bg-[#232323] py-2 px-4 rounded-full cursor-pointer text-blue-400 hover:bg-[#4c9ed566]">
-                <i className="fa-regular fa-user" /> Sign in
-              </Link>
-
-              <span className="sm:hidden">
-                <i onClick={() => setOpenSearchInput(true)} className="fa fa-search text-xl cursor-pointer" />
-              </span>
-            </div>
-          )}
-        </>
+          <span className="sm:hidden">
+            <i
+              onClick={() => setOpenSearchInput(true)}
+              className="fa fa-search text-xl cursor-pointer"
+            />
+          </span>
+        </div>
       )}
     </nav>
   );

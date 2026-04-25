@@ -84,7 +84,7 @@ const DbSearch = () => {
 
       const res = await axios.get(`${base_url}/recipes/db-search`, {
         params: { query, page: pageToFetch, limit },
-        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        withCredentials: true
       });
 
       // Bail if cacheKey changed while fetching
@@ -147,12 +147,14 @@ const DbSearch = () => {
       prev.map((r) => (r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r)),
     );
     try {
-      await axios.post(
+      const res = await axios.post(
         `${base_url}/users/me/toggle-save/${recipeId}`,
         {},
-        { headers: { Authorization: "Bearer " + localStorage.getItem("token") } },
+        { withCredentials: true },
       );
-    } catch {
+      console.log("Toggle save",res.data)
+    } catch(err) {
+      console.error("Error Toggle save",err);
       setRecipes((prev) =>
         prev.map((r) => (r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r)),
       );

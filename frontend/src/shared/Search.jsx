@@ -37,6 +37,7 @@ const Search = ({ onSelect, onSubmit }) => {
   const [costMax, setCostMax] = useState("");
   const [sort, setSort] = useState("latest");
   const [limit, setLimit] = useState(12);
+  const [isListening, setIsListening] = useState(false);
 
   // refs & positioning
   const inputRef = useRef(null);
@@ -44,6 +45,7 @@ const Search = ({ onSelect, onSubmit }) => {
   const fetchAbortRef = useRef(null);
   const positionRef = useRef({ left: 0, top: 0, width: 0 });
   const filterPanelRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   // PREFILL FROM URL ON MOUNT / WHEN location.search CHANGES
   useEffect(() => {
@@ -360,6 +362,76 @@ const Search = ({ onSelect, onSubmit }) => {
     setHighlightedIndex(-1);
   };
 
+  const startVoiceSearch = (e) => {
+    e.preventDefault();
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Voice search not supported");
+      return;
+    }
+
+    // stop previous if running
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+
+    // 🔥 SETTINGS
+    recognition.lang = "en-IN"; // works for Hindi + English mix
+    recognition.continuous = true; // 🔁 continuous listening
+    recognition.interimResults = true; // real-time text
+
+    setIsListening(true);
+
+    let finalTranscript = "";
+
+    recognition.start();
+
+    recognition.onresult = (event) => {
+      let interimTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + " ";
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      // 🧠 Live update (Hindi + English both supported)
+      setQuery(finalTranscript + interimTranscript);
+    };
+    setTimeout(() => recognition.stop(), 5000);
+
+    recognition.onend = () => {
+      setIsListening(false);
+
+      if (finalTranscript.trim()) {
+        setQuery(finalTranscript.trim());
+        handleSubmit(); // 🔥 trigger search AFTER speaking
+      }
+    };
+
+    recognition.onerror = (err) => {
+      console.error("Voice error:", err);
+      setIsListening(false);
+    };
+  };
+
+  const stopVoiceSearch = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    setIsListening(false);
+  };
+
   // cuisine chips helpers
   const addCuisine = (value) => {
     const v = String(value || "").trim();
@@ -434,11 +506,8 @@ const Search = ({ onSelect, onSubmit }) => {
                   aria-selected={isHighlighted}
                 >
                   <div className="flex flex-col">
-                    <span className="font-medium text-sm">
-                      {item || item}
-                    </span>
+                    <span className="font-medium text-sm">{item || item}</span>
                   </div>
-                  
                 </li>
               );
             })}
@@ -658,6 +727,13 @@ const Search = ({ onSelect, onSubmit }) => {
           </div>
         </div>
         <div className="flex items-center w-full bg-white rounded-full  shadow-md  focus-within:ring-2 focus-within:ring-green-400 transition-all duration-200 flex-1">
+          <button
+            type="button"
+            onClick={isListening ? stopVoiceSearch : startVoiceSearch}
+            className={`ml-2 py-3 px-3.5 rounded-full cursor-pointer transition-all duration-300 ${isListening ? "bg-red-500 text-white animate-pulse" : "hover:bg-gray-300"}`}
+          >
+            <i className="fa-solid fa-microphone"></i>
+          </button>
           <div className="relative flex-1">
             <input
               ref={inputRef}
@@ -684,6 +760,11 @@ const Search = ({ onSelect, onSubmit }) => {
               }
             />
           </div>
+          {isListening && (
+            <p className="text-sm text-red-500 mt-2 animate-pulse">
+              🎤 Listening... Speak now
+            </p>
+          )}
 
           <button
             type="submit"

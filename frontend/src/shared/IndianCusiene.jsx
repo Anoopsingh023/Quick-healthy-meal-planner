@@ -42,19 +42,13 @@ const Cuisine = () => {
 
   const [showAll, setShowAll] = useState(false);
 
-  //   const visibleCuisines = showAll
-  //     ? cuisines
-  //     : cuisines.slice(0, INITIAL_COUNT);
-
   const getRecipeFromDb = async (tagsArray) => {
     try {
       const tag = tagsArray.join(",");
       const params = { cuisine: tag };
       const res = await axios.get(`${base_url}/recipes/db-search`, {
         params,
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        withCredentials: true,
       });
       const queryString = new URLSearchParams(params).toString();
       navigate(`/dashboard/db-search?${queryString}`);
@@ -84,32 +78,6 @@ const Cuisine = () => {
         </select>
       </div>
 
-      {/* <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {visibleCuisines.map((cuisine, index) => (
-          <div
-            key={index}
-            onClick={() => getRecipeFromDb(cuisine.tag)}
-            className="p-4 text-[#212121] font-semibold border border-[#7f7d7d] rounded-xl hover:shadow-md cursor-pointer transition"
-          >
-            <h2 className="text-center text-sm font-medium">
-              {cuisine.name} Recipes
-            </h2>
-          </div>
-        ))}
-      </div> */}
-
-      {/* Show Button */}
-
-      {/* {cuisines.length > INITIAL_COUNT && (
-        <div className="flex justify-center mt-6">
-          <button
-            onClick={() => setShowAll(!showAll)}
-            className="px-6 py-2 rounded-full bg-green-600 text-white text-sm hover:bg-green-700 transition cursor-pointer"
-          >
-            {showAll ? "Show Less" : "Show More"}
-          </button>
-        </div>
-      )} */}
     </div>
   );
 };

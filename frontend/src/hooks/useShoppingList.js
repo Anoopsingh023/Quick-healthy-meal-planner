@@ -8,9 +8,7 @@ const useShoppingList = () => {
     const getShoppingList = async()=>{
         try {
             const res = await axios.get(`${base_url}/shopinglists/`,{
-                headers: {
-                    Authorization: "Bearer "+ localStorage.getItem("token")
-                }
+                withCredentials:true
             })
             console.log("Shopping list",res.data)
             setShoppingList(res.data)

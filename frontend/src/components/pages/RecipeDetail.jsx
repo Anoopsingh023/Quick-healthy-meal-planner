@@ -21,9 +21,7 @@ const recipe = location.state?.recipe;
         `${base_url}/users/me/toggle-save/${recipeId}`,
         {},
         {
-          headers: {
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
+          withCredentials: true
         }
       );
       console.log("Recipe Saved", res.data);
@@ -36,9 +34,7 @@ const recipe = location.state?.recipe;
   const isRecipeSaved = async (recipeById) => {
     try {
       const res = await axios.get(`${base_url}/users/is-saved/${recipeId}`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        withCredentials: true
       });
       console.log("Is Recipe Saved", res.data);
       setIsSaved(res.data.data.isSaved);
@@ -50,9 +46,7 @@ const recipe = location.state?.recipe;
   const addToShoppingList = async (recipeId) =>{
     try {
       const res = await axios.post(`${base_url}/shopinglists/generate/${recipeId}`,{}, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        withCredentials: true
       });
       console.log("Added to shopping list", res.data);
       // setIsSaved(res.data.data.isSaved);

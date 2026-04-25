@@ -15,9 +15,7 @@ const ProfilePage = () => {
   const getUser = async () => {
     try {
       const res = await axios.get(`${base_url}/users/me`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        withCredentials: true
       });
       console.log("user data", res.data.data);
       const userData = res.data.data || [];

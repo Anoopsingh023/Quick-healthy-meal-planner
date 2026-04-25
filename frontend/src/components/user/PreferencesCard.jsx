@@ -46,9 +46,7 @@ function PreferencesCard({ preferences, profile, onSave }) {
     };
     try {
       const res = await axios.put(`${base_url}/users/me/profile`,payload,{
-        headers: {
-          Authorization: "Bearer "+ localStorage.getItem("token")
-        }
+        withCredentials: true
       });
 
       // onSave(res);

@@ -6,21 +6,13 @@ import useSaveRecipe from "../hooks/useSaveRecipe";
 import { Timer } from "lucide-react";
 import calories from "../assets/Calories.png";
 import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 const RecomendCard = ({ recipe = {} }) => {
+  const { isAuthenticated } = useAuth();
   const recipeId = recipe?._id;
-  // console.log("Saved recipe id",recipeId)
   const { isSaved, isRecipeSaved, toggleSaveRecipe } = useSaveRecipe(recipeId);
   const navigate = useNavigate();
-  const [isloged, setIsLoged] = useState(false);
-
-  useEffect(() => {
-    // isRecipeSaved(recipeId);
-    const token = localStorage.getItem("token");
-    if (token) {
-      setIsLoged(true);
-    }
-  }, []);
 
   const handleRecipe = (recipeId) => {
     if (!recipeId) return;
@@ -34,7 +26,7 @@ const RecomendCard = ({ recipe = {} }) => {
 
   return (
     <>
-      {isloged ? (
+      {isAuthenticated ? (
         <div className="relative flex flex-col gap-3 bg-[#07466a] p-0.5 rounded-2xl shadow-4xl hover:shadow-xl transition-shadow duration-300 overflow-hidden">
           {/* Top badge / likes */}
           <div className="absolute z-10 top-3 right-3">
@@ -137,11 +129,6 @@ const RecomendCard = ({ recipe = {} }) => {
         </div>
       ) : (
         null
-        // <div className="bg-[#cacaca] rounded-lg  p-4 shadow-md h-full flex justify-center items-center">
-        //   <div>
-        //   <p className="font-semibold mb-3">Login to get recommended recipe on daily basis</p>
-        //   </div>
-        // </div>
       )}
     </>
   );

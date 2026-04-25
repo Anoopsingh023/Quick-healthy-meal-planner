@@ -105,9 +105,7 @@ const FeedPage = () => {
   const fetchFeed = async () => {
     try {
       const res = await axios.get(`${base_url}/feeds/`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+        withCredentials: true
       });
       console.log("Feed", res.data);
       setFeeds(res.data);
@@ -119,9 +117,7 @@ const FeedPage = () => {
   const createComment = async(imagePost)=>{
     try {
       const res = await axios.post(`${base_url}/comments/`,{imagePost,content},{
-        headers: {
-          Authorization: "Bearer "+ localStorage.getItem("token")
-        }
+        withCredentials: true
       })
       console.log("Create comment",res.data)
       fetchFeed()

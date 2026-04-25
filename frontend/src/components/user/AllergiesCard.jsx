@@ -28,10 +28,7 @@ export default function AllergiesCard({ allergies = [], onSave }) {
         `${base_url}/users/me/allergies`,
         { allergies: normalized },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          withCredentials: true
         }
       );
       alert("Allergies updated");

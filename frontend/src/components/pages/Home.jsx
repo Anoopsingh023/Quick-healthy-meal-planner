@@ -29,10 +29,8 @@ const Home = () => {
 
   const getRandomRecipe = async () => {
     try {
-      const res = await axios.get(`${base_url}/recipes/recommend`, {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
+      const res = await axios.get(`${base_url}/recipes/recommend`,{}, {
+        withCredentials: true,
       });
       console.log("Random recipe", res.data);
       const recipedata = res.data;
@@ -56,7 +54,7 @@ const Home = () => {
     if (token) {
       setIsLoged(true);
     }
-  },[]);
+  }, []);
 
   useEffect(() => {
     const cacheKey = `recomendedRecipe`;

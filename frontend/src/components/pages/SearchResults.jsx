@@ -184,11 +184,7 @@ const SearchResults = () => {
           res = await axios.get(`${API_URL}/search`, {
             params: reqParams,
             signal,
-            headers: {
-              Authorization: localStorage.getItem("token")
-                ? "Bearer " + localStorage.getItem("token")
-                : undefined,
-            },
+            withCredentials: true
           });
         }
 
@@ -268,9 +264,7 @@ const SearchResults = () => {
         `${base_url}/users/me/toggle-save/${recipeId}`,
         {},
         {
-          headers: {
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
+          withCredentials: true
         },
       );
       console.log("toggle save recipe", res.data)

@@ -33,9 +33,7 @@ export default function ProfileHeader({ user }) {
         `${base_url}/users/me/account`,
         { fullName: form.fullName, userName: form.userName },
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          withCredentials: true
         }
       );
       console.log("Update user data", res.data);

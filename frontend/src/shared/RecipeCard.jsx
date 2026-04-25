@@ -11,12 +11,6 @@ const RecipeCard = ({ recipe, onToggleSave = () => {} }) => {
   const navigate = useNavigate();
   const recipeId = recipe?._id;
 
-  // const { isSaved,isRecipeSaved, toggleSaveRecipe } = useSaveRecipe(recipeId);
-
-  // useEffect(()=>{
-  //   isRecipeSaved(recipeId)
-  // },[])
-
   const handleRecipe = () => {
     navigate(`/dashboard/${recipe._id}`, {
       state: { recipe },
@@ -28,9 +22,7 @@ const RecipeCard = ({ recipe, onToggleSave = () => {} }) => {
       const res = await axios.delete(
         `${base_url}/recipes/re/delete/${recipeId}`,
         {
-          headers: {
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
+          withCredentials: true,
         },
       );
       console.log("Recipe by id delete", res.data);
