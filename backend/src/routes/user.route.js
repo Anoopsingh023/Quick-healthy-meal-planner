@@ -22,12 +22,14 @@ import {
 } from "../controllers/user.controller.js";
 import { protect, adminOnly } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import { googleLogin } from "../controllers/googleAuth.controller.js";
 
 const router = express.Router();
 
 // --------------------- AUTH ROUTES ---------------------
 router.post("/register", upload.single("avatar"), registerUser);
 router.post("/login", loginUser);
+router.post("/google-login", googleLogin);
 router.post("/logout", protect, logoutUser);
 router.post("/refresh-token", refreshAccessToken);
 

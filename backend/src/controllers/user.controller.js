@@ -10,16 +10,21 @@ import {
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { Like } from "../models/PostModels/like.model.js";
+import crypto from "crypto";
+
+const hashToken = (token) => {
+  return crypto.createHash("sha256").update(token).digest("hex");
+};
 
 // --------------------- TOKEN GENERATION ---------------------
-const generateTokens = async (userId) => {
-  const user = await User.findById(userId);
-  if (!user) throw new apiError(500, "User not found for token generation");
-
+const generateTokens = async (user) => {
   const accessToken = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
 
-  user.refreshToken = refreshToken;
+  // 🔥 HASH refresh token before saving
+  user.refreshToken = hashToken(refreshToken);
+  user.refreshTokenExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+
   await user.save({ validateBeforeSave: false });
 
   return { accessToken, refreshToken };
@@ -47,12 +52,23 @@ const registerUser = asyncHandler(async (req, res) => {
     avatar: avatar.secure_url,
   });
 
+  
+  const { accessToken, refreshToken } = await generateTokens(user);
+  
   const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken",
   );
+  const options = {
+  httpOnly: true,
+  secure: true,
+  sameSite: "Strict",
+};
+
   return res
     .status(201)
-    .json(new apiResponse(201, createdUser, "User registered successfully"));
+    .cookie("accessToken", accessToken, options)
+  .cookie("refreshToken", refreshToken, options)
+    .json(new apiResponse(201, createdUser, "User registered and logged in"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -60,18 +76,21 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!(email || userName))
     throw new apiError(400, "Username or email is required");
 
-  const user = await User.findOne({ $or: [{ email }, { userName }] });
+  const user = await User.findOne({ $or: [{ email }, { userName }] }).select(
+    "+password",
+  );
   if (!user) throw new apiError(404, "User not found");
 
   const validPassword = await user.isPasswordCorrect(password);
   if (!validPassword) throw new apiError(401, "Invalid password");
 
-  const { accessToken, refreshToken } = await generateTokens(user._id);
+  const { accessToken, refreshToken } = await generateTokens(user);
 
-  const options = { httpOnly: true, 
+  const options = {
+    httpOnly: true,
     secure: true, // false for localhost
-     sameSite: "none" // none for production(HTTPS)
-    };
+    sameSite: "strict", // lax for localhost
+  };
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
@@ -80,17 +99,22 @@ const loginUser = asyncHandler(async (req, res) => {
       new apiResponse(
         200,
         {
-          user: await User.findById(user._id).select("-password -refreshToken"),
-          accessToken,
-          refreshToken,
+          user: user,
+          // accessToken,
+          // refreshToken,
         },
-        "Logged in successfully"
-      )
+        "Logged in successfully",
+      ),
     );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } });
+  // const user = await User.findById(req.user._id).select("+refreshToken");
+
+  // user.refreshToken = undefined;
+  // await user.save();
+
   return res
     .status(200)
     .clearCookie("accessToken")
@@ -98,17 +122,51 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, {}, "Logged out successfully"));
 });
 
+const logoutAllDevices = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  user.tokenVersion += 1; // 🔥 invalidate ALL tokens
+  user.refreshToken = null;
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Logged out from all devices",
+  });
+});
+
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingToken = req.cookies.refreshToken || req.body.refreshToken;
-  if (!incomingToken) throw new apiError(401, "Unauthorized request");
+  if (!incomingToken) throw new apiError(401, "No refresh token");
 
-  const decoded = jwt.verify(incomingToken, process.env.REFRESH_TOKEN_SECRET);
-  const user = await User.findById(decoded._id);
-  if (!user || user.refreshToken !== incomingToken)
+  let decoded;
+  try {
+    decoded = jwt.verify(incomingToken, process.env.REFRESH_TOKEN_SECRET);
+  } catch {
     throw new apiError(401, "Invalid refresh token");
+  }
+  const user = await User.findById(decoded._id).select("+refreshToken");
+  if (!user) throw new apiError(401, "User not found");
 
-  const { accessToken, refreshToken } = await generateTokens(user._id);
-  const options = { httpOnly: true, secure: true };
+  const hashedIncoming = hashToken(incomingToken);
+
+  // 🔥 REUSE DETECTION
+  if (user.refreshToken !== hashedIncoming) {
+    // possible token theft → invalidate all sessions
+    user.tokenVersion += 1;
+    user.refreshToken = null;
+    await user.save();
+
+    throw new apiError(401, "Suspicious activity detected. Login again.");
+  }
+
+  const { accessToken, refreshToken } = await generateTokens(user);
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Strict",
+  };
 
   return res
     .status(200)
@@ -117,9 +175,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     .json(
       new apiResponse(
         200,
-        { accessToken, refreshToken },
-        "Access token refreshed"
-      )
+        // { accessToken, refreshToken },
+        {},
+        "Access token refreshed",
+      ),
     );
 });
 
@@ -132,12 +191,13 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const updateAccountDetail = asyncHandler(async (req, res) => {
   const { fullName, userName } = req.body;
-  if (!fullName || !userName) throw new apiError(400, "All fields are required");
+  if (!fullName || !userName)
+    throw new apiError(400, "All fields are required");
 
   const user = await User.findByIdAndUpdate(
     req.user._id,
     { $set: { fullName, userName } },
-    { new: true }
+    { new: true },
   ).select("-password");
   return res
     .status(200)
@@ -154,7 +214,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     { avatar: avatar.secure_url },
-    { new: true }
+    { new: true },
   ).select("-password");
   return res
     .status(200)
@@ -189,7 +249,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     { $set: setObj },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   ).select("-password -refreshToken");
 
   if (!updatedUser) {
@@ -206,14 +266,20 @@ const updateUserAllergies = asyncHandler(async (req, res) => {
   let allergies = req.body.allergies ?? req.body.profile?.allergies;
 
   if (typeof allergies === "undefined") {
-    return res.status(400).json(new apiResponse(400, {}, "No allergies provided"));
+    return res
+      .status(400)
+      .json(new apiResponse(400, {}, "No allergies provided"));
   }
 
   // Normalize: single string -> array
-  if (typeof allergies === "string") allergies = allergies.trim() === "" ? [] : [allergies];
+  if (typeof allergies === "string")
+    allergies = allergies.trim() === "" ? [] : [allergies];
 
   if (!Array.isArray(allergies)) {
-    throw new apiError(400, "allergies must be an array of strings or a single string");
+    throw new apiError(
+      400,
+      "allergies must be an array of strings or a single string",
+    );
   }
 
   // Clean and validate each allergy
@@ -229,15 +295,15 @@ const updateUserAllergies = asyncHandler(async (req, res) => {
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     { $set: { "profile.allergies": cleaned } }, // set to [] if cleared
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   ).select("-password -refreshToken");
 
   if (!updatedUser) throw new apiError(404, "User not found");
 
-  return res.status(200).json(new apiResponse(200, updatedUser, "Allergies updated successfully"));
+  return res
+    .status(200)
+    .json(new apiResponse(200, updatedUser, "Allergies updated successfully"));
 });
-
-
 
 // --------------------- PASSWORD MANAGEMENT ---------------------
 const changePassword = asyncHandler(async (req, res) => {
@@ -276,7 +342,7 @@ const toggleSaveRecipe = asyncHandler(async (req, res) => {
   }
 
   const alreadySaved = user.savedRecipes.some(
-    (id) => id.toString() === recipeId.toString()
+    (id) => id.toString() === recipeId.toString(),
   );
 
   let updatedUser;
@@ -287,7 +353,7 @@ const toggleSaveRecipe = asyncHandler(async (req, res) => {
     updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       { $pull: { savedRecipes: recipeId } },
-      { new: true }
+      { new: true },
     ).select("savedRecipes");
     isSaved = false;
   } else {
@@ -295,7 +361,7 @@ const toggleSaveRecipe = asyncHandler(async (req, res) => {
     updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       { $addToSet: { savedRecipes: recipeId } },
-      { new: true }
+      { new: true },
     ).select("savedRecipes");
     isSaved = true;
   }
@@ -308,8 +374,8 @@ const toggleSaveRecipe = asyncHandler(async (req, res) => {
         { isSaved, savedRecipes: updatedUser.savedRecipes },
         alreadySaved
           ? "Recipe removed from saved list"
-          : "Recipe saved successfully"
-      )
+          : "Recipe saved successfully",
+      ),
     );
 });
 
@@ -329,7 +395,7 @@ const checkRecipeSaved = asyncHandler(async (req, res) => {
   }
 
   const isSaved = user.savedRecipes.some(
-    (id) => id.toString() === recipeId.toString()
+    (id) => id.toString() === recipeId.toString(),
   );
 
   res
@@ -366,7 +432,9 @@ const getSavedRecipes = asyncHandler(async (req, res) => {
   const likes = await Like.find({
     likedBy: userId,
     targetType: "Recipe",
-  }).select("target").lean();
+  })
+    .select("target")
+    .lean();
 
   const likedSet = new Set(likes.map((l) => l.target.toString()));
 
@@ -382,13 +450,11 @@ const getSavedRecipes = asyncHandler(async (req, res) => {
     isLiked: likedSet.has(r._id.toString()),
   }));
 
-  res.status(200).json(
-    new apiResponse(
-      200,
-      finalData,
-      "Saved recipes fetched successfully"
-    )
-  );
+  res
+    .status(200)
+    .json(
+      new apiResponse(200, finalData, "Saved recipes fetched successfully"),
+    );
 });
 
 const removeSavedRecipe = asyncHandler(async (req, res) => {
@@ -452,6 +518,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 
 // --------------------- EXPORTS ---------------------
 export {
+  generateTokens,
   registerUser,
   loginUser,
   logoutUser,
