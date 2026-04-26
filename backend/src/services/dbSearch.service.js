@@ -19,28 +19,6 @@ export const dbSearch = async ({ query, filter, page, limit, userId }) => {
     ? filter["metadata.cuisine"].$in
     : [];
 
-  // ---------------- 🔥 PRE-FETCH USER DATA ----------------
-  let savedSet = new Set();
-  let likedSet = new Set();
-
-  if (userId) {
-    const [user, likes] = await Promise.all([
-      User.findById(userId).select("savedRecipes"),
-      Like.find({
-        likedBy: userId,
-        targetType: "Recipe",
-      }).select("target"),
-    ]);
-
-    if (user?.savedRecipes) {
-      savedSet = new Set(user.savedRecipes.map((id) => id.toString()));
-    }
-
-    if (likes) {
-      likedSet = new Set(likes.map((l) => l.target.toString()));
-    }
-  }
-
   // 🔥 SEMANTIC SEARCH
   if (query) {
     try {
@@ -119,38 +97,10 @@ export const dbSearch = async ({ query, filter, page, limit, userId }) => {
           },
         },
         {
-          $lookup: {
-            from: "likes",
-            let: { recipeId: "$_id" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      { $eq: ["$target", "$$recipeId"] },
-                      { $eq: ["$targetType", "Recipe"] },
-                      {
-                        $eq: ["$likedBy", new mongoose.Types.ObjectId(userId)],
-                      },
-                    ],
-                  },
-                },
-              },
-            ],
-            as: "userLike",
-          },
-        },
-        {
-          $addFields: {
-            isLiked: { $gt: [{ $size: "$userLike" }, 0] },
-          },
-        },
-        {
           $project: {
             title: 1,
             image: 1,
             isVerified: 1,
-            // minimal metadata only
             "metadata.cookingTime": 1,
             "metadata.difficulty": 1,
             "metadata.cuisine": 1,
@@ -158,14 +108,12 @@ export const dbSearch = async ({ query, filter, page, limit, userId }) => {
             "metadata.calories": 1,
             "metadata.costEstimate": 1,
 
-            // stats (for UI badges)
             "stats.likes": 1,
             "stats.saves": 1,
             "stats.rating": 1,
             popularityScore: 1,
             qualityScore: 1,
             finalScore: 1,
-            // isLiked: 1,
           },
         },
         { $sort: { finalScore: -1 } },
@@ -216,8 +164,6 @@ export const dbSearch = async ({ query, filter, page, limit, userId }) => {
   const finalResults = Array.from(map.values())
     .map((recipe) => ({
       ...recipe,
-      isSaved: savedSet.has(recipe._id.toString()),
-      isLiked: likedSet.has(recipe._id.toString()),
     }))
     .sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0))
     .slice(0, limit);

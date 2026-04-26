@@ -70,7 +70,7 @@ const getRecipeById = asyncHandler(async (req, res) => {
   const recipe = await Recipe.findById(req.params.id).populate(
     "createdBy",
     "userName email"
-  );
+  ).select("title description image ingredients isVerified metadata popularityScore qualityScore stats steps tags");
 
   if (!recipe) {
     throw new apiError(404, "Recipe not found");
