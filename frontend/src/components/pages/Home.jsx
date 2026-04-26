@@ -75,8 +75,6 @@ const Home = () => {
 
   // ── On mount ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) setIsLoggedIn(true);
 
     getShoppingList();
     purgeStaleAiCache();
