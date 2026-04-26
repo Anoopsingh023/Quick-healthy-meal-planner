@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { base_url } from "../../utils/constant";
 import RecipeCard from "../../shared/RecipeCard";
 import BackButton from "../../shared/BackButton";
+import { useSavedStore } from "../../store/useSavedStore";
 
 const API_URL = `${base_url}/recipes`;
 
@@ -13,9 +14,22 @@ const parseNumber = (v) => {
   return Number.isFinite(n) ? n : undefined;
 };
 
+const SkeletonCard = () => (
+  <div className="animate-pulse bg-white rounded-xl p-3 shadow">
+    <div className="h-40 bg-gray-300 rounded-lg mb-3" />
+    <div className="h-4 bg-gray-300 rounded w-3/4 mb-2" />
+    <div className="h-4 bg-gray-300 rounded w-1/2" />
+  </div>
+);
+
+const SKELETONS_INITIAL = Array.from({ length: 6 });
+const SKELETONS_MORE = Array.from({ length: 3 });
+
 const SearchResults = () => {
   const { search } = useLocation();
   const params = React.useMemo(() => new URLSearchParams(search), [search]);
+
+  const { checkSaved, toggle: toggleSave } = useSavedStore();
 
   // read the params we expect (Search component builds these)
   const query = (params.get("query") || "").trim();
@@ -184,7 +198,7 @@ const SearchResults = () => {
           res = await axios.get(`${API_URL}/search`, {
             params: reqParams,
             signal,
-            withCredentials: true
+            withCredentials: true,
           });
         }
 
@@ -251,32 +265,10 @@ const SearchResults = () => {
     search,
   ]);
 
-  const handleToggleSave = async (recipeId) => {
-    console.log("toggle called", recipeId);
-    // 🔥 1. Optimistic update
-    setResults((prev) =>
-      prev.map((r) => (r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r)),
-    );
-
-    try {
-      // 🔥 2. Call API
-      const res = await axios.post(
-        `${base_url}/users/me/toggle-save/${recipeId}`,
-        {},
-        {
-          withCredentials: true
-        },
-      );
-      console.log("toggle save recipe", res.data)
-    } catch (err) {
-      // ❌ 3. Revert if failed
-      setResults((prev) =>
-        prev.map((r) =>
-          r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r,
-        ),
-      );
-    }
-  };
+  const handleToggleSave = useCallback(
+    (recipeId) => toggleSave(recipeId),
+    [toggleSave],
+  );
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -292,13 +284,21 @@ const SearchResults = () => {
         <BackButton />
       </div>
 
-      <div>
+      {/* <div>
         {loading && results.length == 0 ? (
           <div className="text-sm text-gray-600 animate-pulse">
             Generating recipes...
           </div>
         ) : null}
-      </div>
+      </div> */}
+
+      {loading && results.length === 0 && (
+        <div className="grid grid-cols-3 gap-4 mt-4">
+          {SKELETONS_INITIAL.map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      )}
       <div>
         {loading && results.length > 0 && (
           <div className="text-sm text-gray-500 animate-pulse">
@@ -308,32 +308,13 @@ const SearchResults = () => {
       </div>
       <div className="grid grid-cols-3 gap-4">
         {results.map((r, i) => (
-          <div key={r._id || r.id || i}>
-            <RecipeCard 
-            recipe={r} 
-            onToggleSave={handleToggleSave} 
-            />
-          </div>
+          <RecipeCard
+            key={r._id}
+            recipe={{ ...r, isSaved: checkSaved(r._id) }}
+            onToggleSave={handleToggleSave}
+          />
         ))}
       </div>
-
-      {/* {loading ? (
-        <div>Loading...</div>
-      ) : error ? (
-        <div className="text-red-600">Error: {error}</div>
-      ) : results.length === 0 ? (
-        <div className="p-6 rounded-2xl bg-[#f3f4f6] text-gray-600">
-          No results found.
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {results.map((r, i) => (
-            <div key={r._id || r.id || i}>
-              <RecipeCard recipe={r} />
-            </div>
-          ))}
-        </div>
-      )} */}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { Tag, TimeTag, PriceTag, CalorieTag } from "./Tag";
 import { useNavigate } from "react-router-dom";
 import defaultImg from "../assets/recipe.jpg";
@@ -8,16 +8,33 @@ import calories from "../assets/Calories.png";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
-const RecomendCard = ({ recipe = {} }) => {
+const RecomendCard = ({ recipe, isSaved, onToggleSave }) => {
   const { isAuthenticated } = useAuth();
   const recipeId = recipe?._id;
-  const { isSaved, isRecipeSaved, toggleSaveRecipe } = useSaveRecipe(recipeId);
+  // const { isSaved, isRecipeSaved, toggleSaveRecipe } = useSaveRecipe(recipeId);
   const navigate = useNavigate();
 
   const handleRecipe = (recipeId) => {
     if (!recipeId) return;
     navigate(`/dashboard/${recipeId}`);
   };
+
+  const handleToggleSave = useCallback(
+    (e) => {
+      e.stopPropagation(); // prevent card click from also navigating
+      if (!recipe?._id) return;
+      onToggleSave(recipe._id);
+    },
+    [recipe?._id, onToggleSave],
+  );
+
+  if (!recipe) {
+    return (
+      <div className="animate-pulse rounded-2xl bg-gray-100 shadow-md h-64 flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Loading recommendation…</p>
+      </div>
+    );
+  }
 
   const title = recipe?.title || "Untitled recipe";
   const imageSrc = recipe?.image || defaultImg;
@@ -31,25 +48,13 @@ const RecomendCard = ({ recipe = {} }) => {
           {/* Top badge / likes */}
           <div className="absolute z-10 top-3 right-3">
             <div className="flex ">
-              {isSaved ? (
-                <button
-                  type="button"
-                  onClick={() => toggleSaveRecipe(recipeId)}
-                  aria-label="Save recipe"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/90 dark:bg-zinc-800 border border-emerald-600 text-emerald-600 dark:text-emerald-300 text-sm font-medium shadow-sm hover:bg-emerald-50 dark:hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 transition z-20 cursor-pointer"
-                >
-                  Saved
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => toggleSaveRecipe(recipeId)}
-                  aria-label="Save recipe"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/90 dark:bg-zinc-800 border border-emerald-600 text-emerald-600 dark:text-emerald-300 text-sm font-medium shadow-sm hover:bg-emerald-50 dark:hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 transition z-20 cursor-pointer"
-                >
-                  Save
-                </button>
-              )}
+              <button
+                onClick={handleToggleSave}
+                aria-label={isSaved ? "Unsave recipe" : "Save recipe"}
+                className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center text-white text-lg font-bold transition-all duration-200 cursor-pointer ${isSaved ? "bg-green-600 hover:bg-green-700 shadow-lg" : "bg-black/40 hover:bg-black/60 backdrop-blur-sm"}`}
+              >
+                {isSaved ? "✓" : "♡"}
+              </button>
             </div>
           </div>
 
@@ -127,9 +132,7 @@ const RecomendCard = ({ recipe = {} }) => {
             </div>
           </div>
         </div>
-      ) : (
-        null
-      )}
+      ) : null}
     </>
   );
 };

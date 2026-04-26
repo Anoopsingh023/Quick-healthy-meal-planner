@@ -46,8 +46,8 @@ const RecipeCard = ({ recipe, onToggleSave = () => {} }) => {
       {/* IMAGE */}
       <div className="relative h-52 overflow-hidden">
         <LazyImage
-          src={recipe.image}
-          alt={recipe.title}
+          src={image}
+          alt={title}
           className="w-full h-full object-cover  transition-transform duration-500 group-hover:scale-110"
         />
 

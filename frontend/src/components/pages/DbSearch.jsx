@@ -1,21 +1,46 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { base_url } from "../../utils/constant";
 import { BackButton, RecipeCard } from "../../shared";
+import { getCache, appendCache } from "../../store/recipeCache";
+import { useSavedStore } from "../../store/useSavedStore";
 
-// 🔥 GLOBAL MEMORY CACHE
-const searchCache = {};
 
+const SkeletonCard = () => (
+  <div className="animate-pulse bg-white rounded-xl p-3 shadow">
+    <div className="h-40 bg-gray-300 rounded-lg mb-3" />
+    <div className="h-4 bg-gray-300 rounded w-3/4 mb-2" />
+    <div className="h-4 bg-gray-300 rounded w-1/2" />
+  </div>
+);
+
+const SKELETONS_INITIAL = Array.from({ length: 6 });
+const SKELETONS_MORE = Array.from({ length: 3 });
+
+// ─── DbSearch ─────────────────────────────────────────────────────────────────
 const DbSearch = () => {
   const { search } = useLocation();
-  const params = useMemo(() => new URLSearchParams(search), [search]);
 
+  const params = useMemo(() => new URLSearchParams(search), [search]);
   const query = (params.get("query") || "").trim();
   const limit = Number(params.get("limit")) || 12;
 
-  const cacheKey = useMemo(() => `dbsearch-${query}-limit-${limit}`, [query, limit]);
+  const cacheKey = useMemo(
+    () => `dbsearch-${query}-limit-${limit}`,
+    [query, limit],
+  );
 
+  // ── Global saved store ─────────────────────────────────────────────────────
+  const { checkSaved, toggle: toggleSave } = useSavedStore();
+
+  // ── Local state ────────────────────────────────────────────────────────────
   const [recipes, setRecipes] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -23,152 +48,93 @@ const DbSearch = () => {
 
   const observerRef = useRef(null);
   const isFetchingRef = useRef(false);
-  // Tracks which pages have already been fetched for current cacheKey
   const fetchedPagesRef = useRef(new Set());
   const currentCacheKeyRef = useRef(null);
 
-  // ✅ SINGLE EFFECT: handles cacheKey change (new query)
+  // ── New query: load cache or reset ────────────────────────────────────────
   useEffect(() => {
     currentCacheKeyRef.current = cacheKey;
     fetchedPagesRef.current = new Set();
     isFetchingRef.current = false;
 
-    const memoryCache = searchCache[cacheKey];
-    const raw = sessionStorage.getItem(cacheKey);
-    const sessionCache = raw ? JSON.parse(raw) : null;
-    // const cached = memoryCache || sessionCache;
-    const cached = null
-
+    const cached = getCache(cacheKey);
     if (cached) {
-      console.log("⚡ Cache hit for", cacheKey);
       setRecipes(cached.recipes);
       setPage(cached.page);
       setHasMore(cached.hasMore);
-      console.log("Cached data",cached)
-      // Mark all pages up to cached.page as already fetched
-      for (let i = 1; i <= cached.page; i++) {
-        fetchedPagesRef.current.add(i);
-      }
+      for (let i = 1; i <= cached.page; i++) fetchedPagesRef.current.add(i);
     } else {
-      console.log("🆕 No cache, resetting for", cacheKey);
       setRecipes([]);
       setPage(1);
       setHasMore(true);
-      // page=1 will be fetched by the page effect below
     }
   }, [cacheKey]);
 
-  // ✅ SINGLE EFFECT: fires on page change, skips if already fetched
+  // ── Page change → fetch ───────────────────────────────────────────────────
   useEffect(() => {
-    // Guard: cacheKey must be initialized
     if (currentCacheKeyRef.current !== cacheKey) return;
-    // Guard: skip if this page was already loaded from cache
-    if (fetchedPagesRef.current.has(page)) {
-      console.log("⛔ Skipping page (already fetched):", page);
-      return;
-    }
+    if (fetchedPagesRef.current.has(page)) return;
+    fetchPage(page);
+  }, [page, cacheKey]); 
 
-    fetchData(page);
-  }, [page, cacheKey]);
-
-
-  const fetchData = async (pageToFetch) => {
+  const fetchPage = async (pageToFetch) => {
     if (isFetchingRef.current || !hasMore) return;
-
     isFetchingRef.current = true;
-    fetchedPagesRef.current.add(pageToFetch); // mark immediately to prevent double fetch
+    fetchedPagesRef.current.add(pageToFetch);
 
     try {
       setLoading(true);
-      console.log("🚀 API CALL page:", pageToFetch);
-
       const res = await axios.get(`${base_url}/recipes/db-search`, {
         params: { query, page: pageToFetch, limit },
-        withCredentials: true
+        withCredentials: true,
       });
 
-      // Bail if cacheKey changed while fetching
-      if (currentCacheKeyRef.current !== cacheKey) {
-        console.log("🚫 Stale response, ignoring");
-        return;
-      }
+      if (currentCacheKeyRef.current !== cacheKey) return; // stale
 
       const newData = res.data.data || [];
-      console.log("Dbsearch api call",res.data)
+      const newHasMore = newData.length === limit;
 
       setRecipes((prev) => {
         const map = new Map();
         [...prev, ...newData].forEach((r) => map.set(r._id, r));
-        const updated = Array.from(map.values());
-
-        const cacheData = {
-          recipes: updated,
-          page: pageToFetch,
-          hasMore: newData.length === limit,
-        };
-        searchCache[cacheKey] = cacheData;
-        sessionStorage.setItem(cacheKey, JSON.stringify(cacheData));
-
-        return updated;
+        const merged = Array.from(map.values());
+        appendCache(cacheKey, newData, pageToFetch, newHasMore);
+        return merged;
       });
 
-      setHasMore(newData.length === limit);
+      setHasMore(newHasMore);
     } catch (err) {
-      console.error(err);
-      fetchedPagesRef.current.delete(pageToFetch); // allow retry on error
+      console.error("Fetch error", err);
+      fetchedPagesRef.current.delete(pageToFetch);
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
     }
   };
 
-  // INFINITE SCROLL OBSERVER
+  // ── Infinite scroll ────────────────────────────────────────────────────────
   useEffect(() => {
     const node = observerRef.current;
     if (!node) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && hasMore && !isFetchingRef.current) {
-          console.log("📄 Next page");
           setPage((prev) => prev + 1);
         }
       },
       { rootMargin: "400px" },
     );
-
     observer.observe(node);
     return () => observer.unobserve(node);
   }, [hasMore]);
 
-  // SAVE / UNSAVE
-  const handleToggleSave = async (recipeId) => {
-    setRecipes((prev) =>
-      prev.map((r) => (r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r)),
-    );
-    try {
-      const res = await axios.post(
-        `${base_url}/users/me/toggle-save/${recipeId}`,
-        {},
-        { withCredentials: true },
-      );
-      console.log("Toggle save",res.data)
-    } catch(err) {
-      console.error("Error Toggle save",err);
-      setRecipes((prev) =>
-        prev.map((r) => (r._id === recipeId ? { ...r, isSaved: !r.isSaved } : r)),
-      );
-    }
-  };
-
-  const SkeletonCard = () => (
-    <div className="animate-pulse bg-white rounded-xl p-3 shadow">
-      <div className="h-40 bg-gray-300 rounded-lg mb-3"></div>
-      <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
-      <div className="h-4 bg-gray-300 rounded w-1/2"></div>
-    </div>
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const handleToggleSave = useCallback(
+    (recipeId) => toggleSave(recipeId),
+    [toggleSave],
   );
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 max-w-6xl mx-auto">
       <div className="mb-4 flex items-center justify-between">
@@ -181,25 +147,35 @@ const DbSearch = () => {
 
       {loading && recipes.length === 0 && (
         <div className="grid grid-cols-3 gap-4 mt-4">
-          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+          {SKELETONS_INITIAL.map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
       )}
 
       <div className="grid grid-cols-3 gap-4 mt-4">
         {recipes.map((r) => (
-          <RecipeCard key={r._id} recipe={r} onToggleSave={handleToggleSave} />
+          <RecipeCard
+            key={r._id}
+            recipe={{ ...r, isSaved: checkSaved(r._id) }}
+            onToggleSave={handleToggleSave}
+          />
         ))}
       </div>
 
       {loading && recipes.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mt-4">
-          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
+          {SKELETONS_MORE.map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
       )}
 
-      {!hasMore && <p className="text-center mt-4 text-gray-500">No more recipes</p>}
+      {!hasMore && (
+        <p className="text-center mt-4 text-gray-500">No more recipes</p>
+      )}
 
-      <div ref={observerRef} className="h-10"></div>
+      <div ref={observerRef} className="h-10" />
     </div>
   );
 };
