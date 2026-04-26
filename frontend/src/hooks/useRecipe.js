@@ -15,8 +15,6 @@ const useRecipe = (recipeId) => {
       console.log("Random recipe", res.data);
       const recipedata = res.data;
       setRecipe(recipedata);
-      const catchKey = `recomendedRecipe`;
-      localStorage.setItem(catchKey, JSON.stringify(recipedata));
     } catch (error) {
       console.log("Random recipe Error", error);
     }
