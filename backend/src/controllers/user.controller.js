@@ -89,7 +89,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const options = {
     httpOnly: true,
     secure: true, // false for localhost
-    sameSite: "strict", // lax for localhost
+    sameSite: "none", // lax for localhost
   };
   return res
     .status(200)
