@@ -16,6 +16,7 @@ import download from "../../assets/recipe/download.jpg";
 import axios from "axios";
 import { base_url } from "../../utils/constant";
 import { useSavedStore } from "../../store/useSavedStore"; // adjust path
+import { useAuth } from "../../context/AuthContext";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const HERO_TAGS     = ["veg", "Egg", "Potato", "Tomato"];
@@ -55,6 +56,7 @@ const Home = () => {
   const { shoppingList, getShoppingList } = useShoppingList();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [recommend,  setRecommend]  = useState(null);
+  const { user, isAuthenticated } = useAuth();
 
   // ── Global saved store ────────────────────────────────────────────────────
   const { checkSaved, toggle: toggleSave } = useSavedStore();
@@ -95,8 +97,8 @@ const Home = () => {
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const shoppingItems  = shoppingList?.data?.items ?? [];
-  const visibleItems   = shoppingItems.slice(0, 4);
-  const extraItemCount = shoppingItems.length - 4;
+  const visibleItems   = shoppingItems?.slice(0, 4);
+  const extraItemCount = shoppingItems?.length - 4;
 
   const recommendRecipe   = recommend?.data;
   const recommendIsSaved  = recommendRecipe ? checkSaved(recommendRecipe._id) : false;
@@ -138,7 +140,7 @@ const Home = () => {
       </div>
 
       {/* ── Shopping list + badges (logged-in only) ── */}
-      {isLoggedIn && (
+      {isAuthenticated && (
         <div className="flex flex-row gap-5 mt-5">
           <div className="flex-[3] flex flex-col gap-4">
             <div className="flex flex-row justify-between items-center">
