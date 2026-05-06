@@ -52,22 +52,21 @@ const registerUser = asyncHandler(async (req, res) => {
     avatar: avatar.secure_url,
   });
 
-  
   const { accessToken, refreshToken } = await generateTokens(user);
-  
+
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken",
   );
   const options = {
-  httpOnly: true,
-  secure: true,
-  sameSite: "Strict",
-};
+    httpOnly: true,
+    secure: true,
+    sameSite: "Strict",
+  };
 
   return res
     .status(201)
     .cookie("accessToken", accessToken, options)
-  .cookie("refreshToken", refreshToken, options)
+    .cookie("refreshToken", refreshToken, options)
     .json(new apiResponse(201, createdUser, "User registered and logged in"));
 });
 
@@ -110,10 +109,6 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } });
-  // const user = await User.findById(req.user._id).select("+refreshToken");
-
-  // user.refreshToken = undefined;
-  // await user.save();
 
   return res
     .status(200)
@@ -130,10 +125,14 @@ const logoutAllDevices = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  res.status(200).json({
-    success: true,
-    message: "Logged out from all devices",
-  });
+  return res
+    .status(200)
+    .clearCookie("accessToken")
+    .clearCookie("refreshToken")
+    .json({
+      success: true,
+      message: "Logged out from all devices",
+    });
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
