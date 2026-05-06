@@ -97,7 +97,6 @@ const searchRecipes = asyncHandler(async (req, res) => {
   });
 });
 
-
 const dbSearchRecipes = asyncHandler(async (req, res) => {
   const { query, page = 1, limit = 12 } = req.query;
 
@@ -119,7 +118,22 @@ const dbSearchRecipes = asyncHandler(async (req, res) => {
 
   if (cached) {
     console.log("⚡ Global Cache hit");
-    baseResults = JSON.parse(cached);
+    const redisResults = JSON.parse(cached);
+
+    if (redisResults.length < limit) {
+      // Cache has fewer results than needed — top up from DB
+      const required = await dbSearch({
+        query,
+        filter: {},
+        page: pageNum,
+        limit: limit - redisResults.length, // only fetch what's missing
+      });
+      baseResults = [...redisResults, ...required];
+    }else {
+    // Cache has enough — use it directly
+    baseResults = redisResults;
+  }
+
   } else {
     console.log("💾 Cache miss → DB call");
 
@@ -131,8 +145,10 @@ const dbSearchRecipes = asyncHandler(async (req, res) => {
       limit: pageSize,
     });
 
-    // Store raw results
+    // Only cache if we got results worth caching
+    if (baseResults.length > 0) {
     await redisClient.setEx(cacheKey, 3600, JSON.stringify(baseResults));
+  }
   }
 
   // 🔥 2️⃣ APPLY USER PERSONALIZATION (NO CACHE)
@@ -144,7 +160,6 @@ const dbSearchRecipes = asyncHandler(async (req, res) => {
 
   const filteredResults = await filterdata({ baseResults, user });
 
-  
   // 🔥 3️⃣ FINAL RESPONSE
   filteredResults.slice(0, pageSize);
   const finalResults = rankRecipes(filteredResults);
