@@ -4,223 +4,281 @@ import { apiError } from "../utils/apiError.js";
 import { Recipe } from "../models/recipe.model.js";
 import { ShoppingList } from "../models/shopinglist.model.js";
 import mongoose from "mongoose";
+import {
+  getBudgetSuggestions,
+  getSubstitutes,
+  getSmartQuantities,
+  getPriorities,
+  getWeeklyPlan,
+} from "../services/smartGrocery/Smartshoppingai.service.js";
 
-/**
- * Helper: get or create shopping list document for user
- */
+// ─── helpers ──────────────────────────────────────────────────────────────────
+const normalize = (name) => name.toLowerCase().trim().replace(/\s+/g, " ");
+
 const getOrCreateList = async (userId) => {
   let list = await ShoppingList.findOne({ userId });
-  if (!list) {
-    list = await ShoppingList.create({ userId, items: [] });
-  }
+  if (!list) list = await ShoppingList.create({ userId, items: [] });
   return list;
 };
 
-// get shoping list
+// ─── existing CRUD ────────────────────────────────────────────────────────────
+
 const getShoppingList = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const list = await getOrCreateList(userId);
-
-  if (!list) throw new apiError(404, {}, "No shopping list found");
-
-  res.status(200).json(new apiResponse(200, list, "Shopping list fetched"));
+  const list = await ShoppingList.findOne({ userId }).lean();
+  return res
+    .status(200)
+    .json(new apiResponse(200, { items: list?.items || [] }));
 });
 
-// Add item
 const addItem = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const {
-    img,
-    name,
-    quantity = "",
-    category = "",
-    isPurchased = false,
-    addedFromRecipe = null,
-  } = req.body;
+  const { name, quantity = "", category = "Other", estimatedPrice } = req.body;
 
-  if (!name || !String(name).trim()) {
-    throw new apiError(400, "Item name is required");
+  if (!name?.trim()) throw new apiError(400, "Item name is required");
+
+  const normalizedName = normalize(name);
+  const price = estimatedPrice ?? 0;
+
+  // merge if already exists
+  const updated = await ShoppingList.findOneAndUpdate(
+    { userId, "items.normalizedName": normalizedName },
+    { $set: { "items.$.quantity": quantity } },
+    { new: true },
+  );
+
+  if (updated) {
+    return res.status(200).json(new apiResponse(200, { items: updated.items }));
   }
-
-  const list = await getOrCreateList(userId);
 
   const newItem = {
-    _id: new mongoose.Types.ObjectId().toString(),
-    img: String(img),
-    name: String(name).trim(),
-    quantity: String(quantity),
-    category: String(category),
-    isPurchased: !!isPurchased,
-    addedFromRecipe: addedFromRecipe || null,
+    _id: new mongoose.Types.ObjectId(),
+    name,
+    normalizedName,
+    quantity,
+    category,
+    estimatedPrice: price,
   };
 
-  list.items.unshift(newItem); // put new items at start
-  await list.save();
+  const list = await ShoppingList.findOneAndUpdate(
+    { userId },
+    { $push: { items: { $each: [newItem], $position: 0 } } },
+    { new: true, upsert: true },
+  );
 
-  res
-    .status(200)
-    .json(
-      new apiResponse(200, { list: newItem }, "Item(s) added to shopping list")
-    );
+  return res.status(200).json(new apiResponse(200, { items: list.items }));
 });
 
-// Remove item
 const removeItem = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
   const { itemId } = req.params;
-  if (!itemId)
-    return res.status(400).json({ success: false, message: "itemId required" });
+  const userId = req.user._id;
 
-  const list = await getOrCreateList(userId);
+  const list = await ShoppingList.findOneAndUpdate(
+    { userId },
+    { $pull: { items: { _id: itemId } } },
+    { new: true },
+  );
 
-  const prevLength = list.items.length;
-  list.items = list.items.filter((it) => String(it._id) !== String(itemId));
-  if (list.items.length === prevLength) {
-    throw new apiError(404, "Item not found");
-  }
-
-  await list.save();
-  res
+  return res
     .status(200)
-    .json(new apiResponse(200, {}, "Item removed from shopping list"));
+    .json(new apiResponse(200, { items: list?.items || [] }));
 });
 
-// Toggle purchase
 const togglePurchased = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
   const { itemId } = req.params;
-  const patch = req.body || {};
+  const userId = req.user._id;
 
-  if (!itemId) throw new apiError(400, "itemId required");
+  await ShoppingList.updateOne(
+    { userId, "items._id": new mongoose.Types.ObjectId(itemId) },
+    [
+      {
+        $set: {
+          items: {
+            $map: {
+              input: "$items",
+              as: "item",
+              in: {
+                $mergeObjects: [
+                  "$$item",
+                  {
+                    status: {
+                      $cond: [
+                        {
+                          $and: [
+                            { $eq: ["$$item._id", new mongoose.Types.ObjectId(itemId)] },
+                            { $eq: ["$$item.status", "pending"] },
+                          ],
+                        },
+                        "purchased",
+                        {
+                          $cond: [
+                            { $eq: ["$$item._id", new mongoose.Types.ObjectId(itemId)] },
+                            "pending",
+                            "$$item.status",
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ]
+  );
 
-  const list = await getOrCreateList(userId);
-
-  const idx = list.items.findIndex((it) => String(it._id) === String(itemId));
-  if (idx === -1){
-    throw new apiError(400, "item not found");
-  }
-
-  // update allowed fields
-  if (Object.prototype.hasOwnProperty.call(patch, "quantity")) {
-    list.items[idx].quantity = String(patch.quantity || "");
-  }
-  if (Object.prototype.hasOwnProperty.call(patch, "category")) {
-    list.items[idx].category = String(patch.category || "");
-  }
-  if (Object.prototype.hasOwnProperty.call(patch, "isPurchased")) {
-    list.items[idx].isPurchased = !!patch.isPurchased;
-  } else {
-    // if isPurchased isn't present, toggle it
-    list.items[idx].isPurchased = !list.items[idx].isPurchased;
-  }
-
-  await list.save();
-  res
+  const list = await ShoppingList.findOne({ userId }).lean();
+  return res
     .status(200)
-    .json(
-      new apiResponse(
-        200,
-        list,
-        `Item marked as ${list.items[idx].isPurchased ? "purchased" : "not purchased"}`
-      )
-    );
+    .json(new apiResponse(200, { items: list?.items || [] }));
 });
 
 const updateItem = asyncHandler(async (req, res) => {
+  const { itemId } = req.params;
+  const { quantity, category } = req.body;
   const userId = req.user._id;
-    const { itemId } = req.params;
-    const { quantity, category } = req.body || {};
 
-    if (!itemId) {
-      return res.status(400).json({ success: false, message: "itemId required" });
-    }
+  const updateFields = {};
+  if (quantity !== undefined) updateFields["items.$.quantity"] = quantity;
+  if (category !== undefined) updateFields["items.$.category"] = category;
 
-    // find the user's shopping list
-    const list = await ShoppingList.findOne({ userId });
-    if (!list) {
-      return res.status(404).json({ success: false, message: "Shopping list not found" });
-    }
+  const list = await ShoppingList.findOneAndUpdate(
+    { userId, "items._id": itemId },
+    { $set: updateFields },
+    { new: true },
+  );
 
-    // find item by id
-    const idx = list.items.findIndex((it) => String(it._id) === String(itemId));
-    if (idx === -1) {
-      return res.status(404).json({ success: false, message: "Item not found" });
-    }
-
-    // Apply updates only if provided
-    let changed = false;
-    if (typeof quantity !== "undefined") {
-      list.items[idx].quantity = String(quantity);
-      changed = true;
-    }
-    if (typeof category !== "undefined") {
-      list.items[idx].category = String(category);
-      changed = true;
-    }
-
-    if (!changed) {
-      return res.status(400).json({ success: false, message: "No valid fields to update" });
-    }
-
-    await list.save();
-
-    return res.status(200).json(new apiResponse(200,{item:list.items},"item is Updated"));
+  if (!list) throw new apiError(404, "Item not found");
+  return res.status(200).json(new apiResponse(200, { items: list.items }));
 });
 
-// generate list from recipe
 const generateFromRecipe = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-    const { recipeId } = req.params;
-    if (!recipeId) throw new apiError(400, "recipeId required")
+  const { recipeId } = req.body;
 
-    const recipe = await Recipe.findById(recipeId);
-    if (!recipe) throw new apiError(400, "recipeId not found")
+  const recipe = await Recipe.findById(recipeId);
+  if (!recipe) throw new apiError(404, "Recipe not found");
 
-    const list = await getOrCreateList(userId);
+  const newItems = recipe.ingredients.map((ing) => ({
+    _id: new mongoose.Types.ObjectId(),
+    name: ing.name,
+    img: ing.img,
+    normalizedName: normalize(ing.name),
+    quantity: ing.quantity || "",
+    addedFromRecipe: recipe._id,
+    estimatedPrice: 0, // front-end will estimate
+  }));
 
-    // Map recipe.ingredients (defensive: ensure array)
-    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
-    // turn each ingredient into shopping item
-    const newItems = ingredients.map((ing) => ({
-      _id: new mongoose.Types.ObjectId().toString(),
-      img: String(ing.img || ""),
-      name: String(ing.name || "").trim(),
-      quantity: String(ing.quantity || ""),
-      category: "", // optional mapping if you have ingredient categories
-      isPurchased: false,
-      addedFromRecipe: recipe._id,
-    })).filter(it => it.name); // drop empty names
+  const list = await ShoppingList.findOne({ userId });
+  const existing = new Set(list?.items.map((i) => i.normalizedName));
+  const filtered = newItems.filter((i) => !existing.has(i.normalizedName));
 
-    // preprend new items but avoid duplicates by name (simple dedupe)
-    const existingNames = new Set(list.items.map(it => String(it.name).toLowerCase()));
-    const itemsToAdd = newItems.filter(it => !existingNames.has(String(it.name).toLowerCase()));
+  const updated = await ShoppingList.findOneAndUpdate(
+    { userId },
+    { $push: { items: { $each: filtered, $position: 0 } } },
+    { new: true, upsert: true },
+  );
 
-    if (itemsToAdd.length > 0) {
-      list.items = [...itemsToAdd, ...list.items];
-      await list.save();
-    }
-
-  res
-    .status(200)
-    .json(new apiResponse(200, list, "Shopping list generated from recipe"));
+  return res.status(200).json(new apiResponse(200, { items: updated.items }));
 });
 
-// clear shoping list
 const clearShoppingList = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-    const list = await getOrCreateList(userId);
-    list.items = [];
-    await list.save();
-
+  const list = await getOrCreateList(userId);
+  list.items = [];
+  await list.save();
   res.status(200).json(new apiResponse(200, {}, "Shopping list cleared"));
 });
 
+// ─── AI endpoints ─────────────────────────────────────────────────────────────
+
+const aiSuggest = asyncHandler(async (req, res) => {
+  const { budget, spent = 0, remaining, currentItems = [], people = 2, days = 7 } = req.body;
+  if (!budget) throw new apiError(400, "budget is required");
+
+  const data = getBudgetSuggestions({ budget, spent, remaining, currentItems, people, days });
+  return res.status(200).json(new apiResponse(200, data, "Suggestions generated"));
+});
+
+
+const aiSubstitutes = asyncHandler(async (req, res) => {
+  const { items = [] } = req.body;
+  if (!items.length) throw new apiError(400, "items are required");
+
+  const data = getSubstitutes({ items });
+  return res.status(200).json(new apiResponse(200, data, "Substitutes generated"));
+});
+
+const aiQuantities = asyncHandler(async (req, res) => {
+  const { items = [], people = 2, days = 7 } = req.body;
+  if (!items.length) throw new apiError(400, "items are required");
+
+  const data = getSmartQuantities({ items, people, days });
+  return res.status(200).json(new apiResponse(200, data, "Quantities estimated"));
+});
+
+const aiPriorities = asyncHandler(async (req, res) => {
+  const { items = [] } = req.body;
+  if (!items.length) throw new apiError(400, "items are required");
+
+  const data = getPriorities({ items });
+  return res.status(200).json(new apiResponse(200, data, "Priorities tagged"));
+});
+
+const aiWeeklyPlan = asyncHandler(async (req, res) => {
+  const { budget, people = 2, days = 7, currentItems = [] } = req.body;
+  if (!budget) throw new apiError(400, "budget is required");
+
+  const data = getWeeklyPlan({ budget, people, days, currentItems });
+  return res.status(200).json(new apiResponse(200, data, "Weekly plan generated"));
+});
+
+const aiSyncPlan = asyncHandler(async (req, res) => {
+  const userId             = req.user._id;
+  const { ingredients = [] } = req.body;
+  if (!ingredients.length) throw new apiError(400, "ingredients are required");
+
+  const newItems = ingredients.map((ing) => ({
+    _id:            new mongoose.Types.ObjectId(),
+    name:           ing.name,
+    normalizedName: ing.name.toLowerCase().trim().replace(/\s+/g, " "),
+    quantity:       ing.quantity || "",
+    category:       ing.category || "Other",
+    estimatedPrice: ing.estimatedPrice || 0,
+    aiGenerated:    true,
+  }));
+
+  const list     = await ShoppingList.findOne({ userId });
+  const existing = new Set(list?.items.map((i) => i.normalizedName));
+  const filtered = newItems.filter((i) => !existing.has(i.normalizedName));
+
+  const updated = await ShoppingList.findOneAndUpdate(
+    { userId },
+    { $push: { items: { $each: filtered, $position: 0 } } },
+    { new: true, upsert: true },
+  );
+
+  return res.status(200).json(
+    new apiResponse(200, { items: updated.items }, `${filtered.length} ingredients synced to list`)
+  );
+});
+
+// ─── exports ──────────────────────────────────────────────────────────────────
 export {
+  getShoppingList,
   addItem,
   removeItem,
   togglePurchased,
   updateItem,
   generateFromRecipe,
-  getShoppingList,
   clearShoppingList,
+  // AI
+  aiSuggest,
+  aiSubstitutes,
+  aiQuantities,
+  aiPriorities,
+  aiWeeklyPlan,
+  aiSyncPlan,
 };
