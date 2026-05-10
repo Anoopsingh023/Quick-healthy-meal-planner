@@ -289,7 +289,7 @@ const updateUserAllergies = asyncHandler(async (req, res) => {
   // If client sent empty array intentionally, that's allowed (clears allergies)
   // Otherwise require at least one valid value
   // (If you want to reject empty array, uncomment the following)
-  // if (cleaned.length === 0) throw new apiError(400, "Provide at least one allergy");
+  if (cleaned.length === 0) throw new apiError(400, "Provide at least one allergy");
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
@@ -307,7 +307,10 @@ const updateUserAllergies = asyncHandler(async (req, res) => {
 // --------------------- PASSWORD MANAGEMENT ---------------------
 const changePassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
-  const user = await User.findById(req.user._id);
+  if (oldPassword == newPassword){
+    throw new apiError(400, "The new password must be different from the old password")
+  }
+  const user = await User.findById(req.user._id).select("+password");;
 
   const isValid = await user.isPasswordCorrect(oldPassword);
   if (!isValid) throw new apiError(400, "Old password is incorrect");

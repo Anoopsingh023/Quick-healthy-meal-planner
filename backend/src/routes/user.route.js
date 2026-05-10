@@ -39,7 +39,7 @@ router.put("/me/account", protect, updateAccountDetail);
 router.put("/me/avatar", protect, upload.single("avatar"), updateUserAvatar);
 router.put("/me/profile", protect, updateUserProfile);
 router.put("/me/allergies", protect, updateUserAllergies);
-router.put("/me/password", protect, changePassword);
+router.post("/me/change-password", protect, changePassword);
 
 // --------------------- RECIPE & SHOPPING LIST ---------------------
 router.post("/me/toggle-save/:recipeId", protect, toggleSaveRecipe);

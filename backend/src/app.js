@@ -40,5 +40,16 @@ app.use("/api/v1/feeds", feedRouter);
 app.use("/api/v1/searches",searchRouter)
 
 
+// ← error handler LAST
+app.use((err, req, res, next) => {
+  const statusCode = err.statuscode || 500;
+  res.status(statusCode).json({
+    success: false,
+    message: err.message || "Something went wrong",
+    errors: err.errors || [],
+    data: null,
+  });
+});
+
 
 export {app}
