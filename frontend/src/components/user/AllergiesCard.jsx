@@ -20,9 +20,6 @@ export default function AllergiesCard({ allergies = [], onSave }) {
   async function save() {
     try {
       const normalized = Array.isArray(items) ? items : [items];
-      const token = localStorage.getItem("token");
-
-      if (!token) throw new Error("Not authenticated");
 
       const res = await axios.put(
         `${base_url}/users/me/allergies`,

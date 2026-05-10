@@ -50,6 +50,7 @@ function PreferencesCard({ preferences, profile, onSave }) {
       });
 
       // onSave(res);
+      console.log("Preference save",res.data)
       alert("Preferences saved");
     } catch (err) {
       alert(err.message);
