@@ -130,7 +130,7 @@ function Login() {
           <button
             type="submit"
             disabled={loading}
-            className={`rounded-lg py-2 text-white font-medium transition-all ${
+            className={`rounded-lg py-2 text-white font-medium transition-all cursor-pointer ${
               loading
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-red-600 hover:bg-red-700"

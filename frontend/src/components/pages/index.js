@@ -5,7 +5,6 @@ import Sidebar from "./Sidebar";
 import ShoppingList from "./ShoppingList";
 import SavedRecipe from "./SavedRecipe";
 import SearchResults from "./SearchResults";
-import ProfilePage from "./ProfilePage";
 
 export {
   Home,
@@ -15,5 +14,4 @@ export {
   ShoppingList,
   SavedRecipe,
   SearchResults,
-  ProfilePage
 };

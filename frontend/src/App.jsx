@@ -10,12 +10,13 @@ import {
   ShoppingList,
   SavedRecipe,
   SearchResults,
-  ProfilePage
 } from "./components/pages/index";
 import DbSearch from "./components/pages/DbSearch";
 import UserRecipeManager from "./components/user/UserRecipeManager";
 import FeedPage from "./components/postComponents/FeedPage";
 import AiRecipePage from "./components/aiServices/AiRecipePage";
+import SmartShoppingList from "./components/shoppingList/SmartShoppingList";
+import ProfilePage from "./components/UserPage/ProfilePage";
 
 
 const appRouter = createBrowserRouter([
@@ -37,7 +38,7 @@ const appRouter = createBrowserRouter([
     children: [
       { path: "", element: <Home /> },
       { path: ":recipeId", element: <RecipeDetail /> },
-      { path: "shopping-bag", element: <ShoppingList /> },
+      { path: "shopping-bag", element: <SmartShoppingList /> },
       { path: "search", element: <SearchResults /> },
       { path: "db-search", element: <DbSearch /> },
       { path: "saved-recipe", element: <SavedRecipe /> },
