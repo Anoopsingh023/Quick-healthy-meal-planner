@@ -53,9 +53,13 @@ export default function OverviewTab({ user, onUpdate }) {
       const res = await api("put", "/users/me/account", form);
       onUpdate?.(res.data.data);
       setEditing(false);
-      showToast("Account details updated")
+      console.log("Account details update ",res.data)
+      const message = res?.data?.message || "Account details updated";
+      showToast(message);
     } catch (e) {
-        showErrorToast("Update failed")
+      console.error("Error Account details update",e?.response.data)
+        const errorMessage = e?.response?.data?.message || "Update failed";
+      showErrorToast(errorMessage);
     } finally {
       setSaving(false);
     }

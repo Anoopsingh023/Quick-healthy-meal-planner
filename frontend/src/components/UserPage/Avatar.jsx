@@ -1,11 +1,13 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { base_url } from "../../utils/constant";
+import useToast from "../../hooks/useToast";
 
 export default function Avatar({ user, onUpdate }) {
   const fileRef = useRef();
   const [preview, setPreview] = useState(user?.avatar || "");
   const [uploading, setUploading] = useState(false);
+  const { showToast, showErrorToast } = useToast();
 
   useEffect(() => setPreview(user?.avatar || ""), [user]);
 
@@ -24,11 +26,15 @@ export default function Avatar({ user, onUpdate }) {
       });
       const url = res.data?.data?.avatar || res.data?.avatar || localUrl;
       console.log("Avatar update ", res.data);
+      const message = res.data.message || "Avatar updated!"
+      showToast(message);
       setPreview(url);
       onUpdate?.({ avatar: url });
     } catch (err) {
       setPreview(user?.avatar || "");
-      console.log("Error avatar update", err);
+      const errorMessage = err?.response.data.message || "Avatar update failed"
+      showErrorToast(errorMessage);
+      console.log("Error avatar update", err?.response.data);
       //   alert("Avatar upload failed");
     } finally {
       setUploading(false);

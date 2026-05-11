@@ -10,7 +10,7 @@ export default function AllergiesTab({ user, onUpdate }) {
   const [items, setItems] = useState(user?.profile?.allergies || []);
   const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
-  const {showToast,showErrorToast} = useToast()
+  const { showToast, showErrorToast } = useToast();
 
   useEffect(() => setItems(user?.profile?.allergies || []), [user]);
 
@@ -22,15 +22,19 @@ export default function AllergiesTab({ user, onUpdate }) {
   }
 
   async function save() {
+    const previous = [...items];
     setSaving(true);
     try {
       const res = await api("put", "/users/me/allergies", { allergies: items });
       onUpdate?.(res.data.data);
-      console.log("add allergies",res.data)
-      showToast("Allergies updated!");
+      console.log("add allergies", res.data);
+      const message = res.data.message || "Allergies updated!"
+      showToast(message);
     } catch (e) {
-    showErrorToast("Allergies update failed");
-    console.log("Error add allergies",e)
+      setItems(previous);
+      const errorMessage = e?.response.data.message || "Allergies update failed"
+      showErrorToast(errorMessage);
+      console.log("Error add allergies", e?.response.data);
     } finally {
       setSaving(false);
     }

@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import useToast from "../../hooks/useToast";
+import axios from "axios";
+import { base_url } from "../../utils/constant";
 
 const api = (method, url, data) =>
   axios({ method, url: `${base_url}${url}`, data, withCredentials: true });
@@ -6,16 +9,16 @@ const api = (method, url, data) =>
 const DIET_OPTIONS = ["Any", "Veg", "Vegan", "Non-Veg", "Keto"];
 const SKILL_OPTIONS = ["Beginner", "Intermediate", "Expert"];
 const CUISINE_LIST = [
-  "Indian",
-  "Italian",
-  "Chinese",
-  "Mexican",
-  "Thai",
-  "Japanese",
-  "French",
-  "Mediterranean",
-  "American",
-  "Korean",
+  "indian",
+  "italian",
+  "chinese",
+  "mexican",
+  "thai",
+  "japanese",
+  "french",
+  "mediterranean",
+  "american",
+  "korean",
 ];
 
 export default function PreferencesTab({ user, onUpdate }) {
@@ -27,25 +30,28 @@ export default function PreferencesTab({ user, onUpdate }) {
     cuisines: user?.preferences?.cuisines || [],
   });
   const [saving, setSaving] = useState(false);
+  const { showToast, showErrorToast } = useToast();
 
   useEffect(() => {
+    console.log("user cuisines from DB:", user?.preferences?.cuisines);
     setForm({
       dietPreference: user?.profile?.dietPreference || "Any",
       cookingSkill: user?.profile?.cookingSkill || "Beginner",
       budgetMin: user?.preferences?.budgetRange?.min ?? 0,
       budgetMax: user?.preferences?.budgetRange?.max ?? 200,
-      cuisines: user?.preferences?.cuisines || [],
+      cuisines: [...new Set(user?.preferences?.cuisines || [])],
     });
   }, [user]);
 
   function toggleCuisine(c) {
-    setForm((f) => ({
-      ...f,
-      cuisines: f.cuisines.includes(c)
-        ? f.cuisines.filter((x) => x !== c)
-        : [...f.cuisines, c],
-    }));
-  }
+  const normalized = c.toLowerCase().trim();
+  setForm(f => ({
+    ...f,
+    cuisines: f.cuisines.includes(normalized)
+      ? f.cuisines.filter(x => x !== normalized)
+      : [...new Set([...f.cuisines, normalized])],
+  }));
+}
 
   async function save() {
     setSaving(true);
@@ -64,9 +70,13 @@ export default function PreferencesTab({ user, onUpdate }) {
         },
       });
       onUpdate?.(res.data.data);
-      showToast("Preferences saved!");
+      console.log("Preferences save", res.data);
+      const message = res?.data?.message || "Preferences saved!";
+      showToast(message);
     } catch (e) {
-      alert(e.response?.data?.message || "Save failed");
+        console.error("Error preference save", e?.response.data);
+      const errorMessage = e?.response?.data?.message || "Save failed";
+      showErrorToast(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -165,7 +175,7 @@ export default function PreferencesTab({ user, onUpdate }) {
               {form.cuisines.includes(c) && (
                 <span className="chip-check">✓</span>
               )}
-              {c}
+              {c.charAt(0).toUpperCase() + c.slice(1)}
             </button>
           ))}
         </div>
