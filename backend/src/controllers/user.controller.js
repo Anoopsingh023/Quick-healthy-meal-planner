@@ -11,6 +11,7 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { Like } from "../models/PostModels/like.model.js";
 import crypto from "crypto";
+import { invalidateUserCache } from "../middlewares/auth.middleware.js";
 
 const hashToken = (token) => {
   return crypto.createHash("sha256").update(token).digest("hex");
@@ -124,6 +125,7 @@ const logoutAllDevices = asyncHandler(async (req, res) => {
   user.refreshToken = null;
 
   await user.save();
+  invalidateUserCache(req.user._id);
 
   return res
     .status(200)
@@ -197,7 +199,8 @@ const updateAccountDetail = asyncHandler(async (req, res) => {
     req.user._id,
     { $set: { fullName, userName } },
     { new: true },
-  ).select("-password");
+  ).select("fullName userName");
+  invalidateUserCache(req.user._id);
   return res
     .status(200)
     .json(new apiResponse(200, user, "Account updated successfully"));
@@ -214,7 +217,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     req.user._id,
     { avatar: avatar.secure_url },
     { new: true },
-  ).select("-password");
+  ).select("avatar");
+  invalidateUserCache(req.user._id);
   return res
     .status(200)
     .json(new apiResponse(200, updatedUser, "Avatar updated successfully"));
@@ -234,10 +238,12 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   // preferences
   if (preferences.budgetRange)
     setObj["preferences.budgetRange"] = preferences.budgetRange;
-  if (preferences.cuisines)
-    setObj["preferences.cuisines"] = Array.isArray(preferences.cuisines)
-      ? preferences.cuisines
-      : [preferences.cuisines];
+  if (Array.isArray(preferences.cuisines)) {
+  // ✅ deduplicate and lowercase before saving
+  setObj["preferences.cuisines"] = [
+    ...new Set(preferences.cuisines.map(c => c.toLowerCase().trim()))
+  ];
+}
 
   if (Object.keys(setObj).length === 0) {
     return res
@@ -248,13 +254,17 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     { $set: setObj },
-    { new: true, runValidators: true },
-  ).select("-password -refreshToken");
+    { new: true, runValidators: false },
+  )
+  // .select("profile.dietPreference profile.cookingSkill preferences.budgetRange preferences.cuisines");
+  .select("preferences profile.dietPreference profile.cookingSkill")
+
 
   if (!updatedUser) {
     throw new apiError(404, "User not found");
   }
 
+  invalidateUserCache(req.user._id);
   res
     .status(200)
     .json(new apiResponse(200, updatedUser, "Profile updated successfully"));
@@ -289,16 +299,17 @@ const updateUserAllergies = asyncHandler(async (req, res) => {
   // If client sent empty array intentionally, that's allowed (clears allergies)
   // Otherwise require at least one valid value
   // (If you want to reject empty array, uncomment the following)
-  if (cleaned.length === 0) throw new apiError(400, "Provide at least one allergy");
+  // if (cleaned.length === 0) throw new apiError(400, "Provide at least one allergy");
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     { $set: { "profile.allergies": cleaned } }, // set to [] if cleared
     { new: true, runValidators: true },
-  ).select("-password -refreshToken");
+  ).select("profile.allergies");
 
   if (!updatedUser) throw new apiError(404, "User not found");
 
+  invalidateUserCache(req.user._id);
   return res
     .status(200)
     .json(new apiResponse(200, updatedUser, "Allergies updated successfully"));
@@ -317,6 +328,7 @@ const changePassword = asyncHandler(async (req, res) => {
 
   user.password = newPassword;
   await user.save({ validateBeforeSave: false });
+  invalidateUserCache(req.user._id);
   res
     .status(200)
     .json(new apiResponse(200, {}, "Password changed successfully"));
