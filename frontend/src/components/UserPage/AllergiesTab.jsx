@@ -27,14 +27,14 @@ export default function AllergiesTab({ user, onUpdate }) {
     try {
       const res = await api("put", "/users/me/allergies", { allergies: items });
       onUpdate?.(res.data.data);
-      console.log("add allergies", res.data);
+      // console.log("add allergies", res.data);
       const message = res.data.message || "Allergies updated!"
       showToast(message);
     } catch (e) {
       setItems(previous);
       const errorMessage = e?.response.data.message || "Allergies update failed"
       showErrorToast(errorMessage);
-      console.log("Error add allergies", e?.response.data);
+      // console.log("Error add allergies", e?.response.data);
     } finally {
       setSaving(false);
     }

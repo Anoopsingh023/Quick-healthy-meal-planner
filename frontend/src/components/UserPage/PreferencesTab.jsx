@@ -33,7 +33,6 @@ export default function PreferencesTab({ user, onUpdate }) {
   const { showToast, showErrorToast } = useToast();
 
   useEffect(() => {
-    console.log("user cuisines from DB:", user?.preferences?.cuisines);
     setForm({
       dietPreference: user?.profile?.dietPreference || "Any",
       cookingSkill: user?.profile?.cookingSkill || "Beginner",
@@ -70,11 +69,11 @@ export default function PreferencesTab({ user, onUpdate }) {
         },
       });
       onUpdate?.(res.data.data);
-      console.log("Preferences save", res.data);
+    //   console.log("Preferences save", res.data);
       const message = res?.data?.message || "Preferences saved!";
       showToast(message);
     } catch (e) {
-        console.error("Error preference save", e?.response.data);
+        // console.error("Error preference save", e?.response.data);
       const errorMessage = e?.response?.data?.message || "Save failed";
       showErrorToast(errorMessage);
     } finally {

@@ -25,7 +25,7 @@ export default function Avatar({ user, onUpdate }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const url = res.data?.data?.avatar || res.data?.avatar || localUrl;
-      console.log("Avatar update ", res.data);
+      // console.log("Avatar update ", res.data);
       const message = res.data.message || "Avatar updated!"
       showToast(message);
       setPreview(url);
@@ -34,8 +34,7 @@ export default function Avatar({ user, onUpdate }) {
       setPreview(user?.avatar || "");
       const errorMessage = err?.response.data.message || "Avatar update failed"
       showErrorToast(errorMessage);
-      console.log("Error avatar update", err?.response.data);
-      //   alert("Avatar upload failed");
+      // console.log("Error avatar update", err?.response.data);
     } finally {
       setUploading(false);
     }
