@@ -12,43 +12,47 @@ dotenv.config({
   path: "./env",
 });
 
-connectDb()
-  .then(() => {
+const startServer = async () => {
+  try {
+    // ✅ Connect MongoDB first
+    await connectDb();
+
+    console.log("✅ MongoDB connected");
+
+    // ✅ Connect Redis
+    await connectRedis();
+
+    // ✅ Schedule cron jobs
     scheduleStreakResetJob();
-    console.log("✅ Cron job initialized: Daily streak reset scheduled.");
+    console.log("✅ Cron job initialized");
+
+    // ✅ Preload embedding model
+    await getEmbedding("hello");
+    console.log("🔥 Model preloaded");
+
+    // ✅ Load recipes AFTER DB connection
+    const recipes = await Recipe.find().select(
+      "title ingredients metadata tags"
+    );
+
+    // ✅ Build autocorrect dictionary
+    await buildDictionary(recipes);
+    initAutoCorrect();
+
+    console.log("🔥 Auto-correct ready");
+
+    // ✅ Build suggestions
+    await buildSuggestions(recipes);
+
+    // ✅ Start server
     app.listen(process.env.PORT || 8000, () => {
-      console.log(`Server is running at port ${process.env.PORT}`);
+      console.log(`🚀 Server running on port ${process.env.PORT}`);
     });
-  })
-  .catch(() => {
-    console.log("MongoDB connection failed !!!");
-  });
 
-connectRedis();
+  } catch (error) {
+    console.error("❌ Startup failed:", error);
+    process.exit(1);
+  }
+};
 
-
-(async () => {
-  await getEmbedding("hello");
-  console.log("🔥 Model preloaded");
-})();
-
-
-(async () => {
-  const recipes = await Recipe.find().select("title ingredients metadata tags");
-
-  await buildDictionary(recipes);
-  initAutoCorrect();
-
-  console.log("🔥 Auto-correct ready");
-})();
-
-(async () => {
-  const recipes = await Recipe.find().select(
-    "title ingredients metadata tags"
-  );
-
-  await buildSuggestions(recipes);
-})();
-
-
-
+startServer();
