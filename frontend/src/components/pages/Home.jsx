@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import useShoppingList from "../../hooks/useShoppingList";
-import {
-  SliderCard,
-  Search,
-  Ingredients,
-  BadgesCard,
-  Tag,
-} from "../../shared";
+import { SliderCard, Search, Ingredients, BadgesCard, Tag } from "../../shared";
 import RecomendCard from "../../shared/RecomendCard";
 import Cusiene from "../../shared/Cusiene";
 import Footer from "./Footer";
@@ -19,10 +13,10 @@ import { useSavedStore } from "../../store/useSavedStore"; // adjust path
 import { useAuth } from "../../context/AuthContext";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const HERO_TAGS     = ["veg", "Egg", "Potato", "Tomato"];
+const HERO_TAGS = ["veg", "Egg", "Potato", "Tomato"];
 const RECOMMEND_KEY = "recommendedRecipe";
-const TWO_HOURS     = 2 * 60 * 60 * 1000;
-const ONE_DAY       = 24 * 60 * 60 * 1000;
+const TWO_HOURS = 2 * 60 * 60 * 1000;
+const ONE_DAY = 24 * 60 * 60 * 1000;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getCachedRecommend() {
@@ -55,7 +49,7 @@ function purgeStaleAiCache() {
 const Home = () => {
   const { shoppingList, getShoppingList } = useShoppingList();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [recommend,  setRecommend]  = useState(null);
+  const [recommend, setRecommend] = useState(null);
   const { user, isAuthenticated } = useAuth();
 
   // ── Global saved store ────────────────────────────────────────────────────
@@ -68,16 +62,19 @@ const Home = () => {
         withCredentials: true,
       });
       const data = res.data;
+      // console.log("Recomend recipe",res.data)
       setRecommend(data);
-      localStorage.setItem(RECOMMEND_KEY, JSON.stringify({ data, time: Date.now() }));
+      localStorage.setItem(
+        RECOMMEND_KEY,
+        JSON.stringify({ data, time: Date.now() }),
+      );
     } catch (err) {
-      console.error("Recommend fetch error", err);
+      console.error("Recommend fetch error", err?.response.data);
     }
   };
 
   // ── On mount ─────────────────────────────────────────────────────────────
   useEffect(() => {
-
     getShoppingList();
     purgeStaleAiCache();
 
@@ -96,17 +93,18 @@ const Home = () => {
   );
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const shoppingItems  = shoppingList?.data?.items ?? [];
-  const visibleItems   = shoppingItems?.slice(0, 4);
+  const shoppingItems = shoppingList?.data?.items ?? [];
+  const visibleItems = shoppingItems?.slice(0, 4);
   const extraItemCount = shoppingItems?.length - 4;
 
-  const recommendRecipe   = recommend?.data;
-  const recommendIsSaved  = recommendRecipe ? checkSaved(recommendRecipe._id) : false;
+  const recommendRecipe = recommend?.data;
+  const recommendIsSaved = recommendRecipe
+    ? checkSaved(recommendRecipe._id)
+    : false;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-6">
-
       {/* ── Hero ── */}
       <div className="flex flex-row justify-between gap-6">
         <div className="flex-[3] flex flex-col">
@@ -133,6 +131,20 @@ const Home = () => {
         </div>
       </div>
 
+      {/* <div className="flex flex-col gap-4 w-full ">
+        <h2 className="text-2xl md:text-3xl font-medium">Recommendations</h2>
+        <div className="flex flex-row justify-around w-full ">
+          <div className="flex flex-col gap-4 ">
+            <img className="w-xl h-xl rounded-2xl" src={download} alt="img" />
+            <h2>Budget friendly</h2>
+          </div>
+          <div className="flex flex-col gap-4 ">
+            <img className="w-xl h-xl rounded-2xl" src={download} alt="img" />
+            <h2>High Protien</h2>
+          </div>
+        </div>
+      </div> */}
+
       {/* ── Browse ── */}
       <div className="flex flex-col gap-4 w-full">
         <h2 className="text-2xl md:text-3xl font-medium">Browse Recipes</h2>
@@ -144,7 +156,9 @@ const Home = () => {
         <div className="flex flex-row gap-5 mt-5">
           <div className="flex-[3] flex flex-col gap-4">
             <div className="flex flex-row justify-between items-center">
-              <h2 className="text-2xl md:text-3xl font-medium">Shopping List</h2>
+              <h2 className="text-2xl md:text-3xl font-medium">
+                Shopping List
+              </h2>
               {extraItemCount > 0 && (
                 <Link
                   to="/dashboard/shopping-bag"
@@ -172,7 +186,11 @@ const Home = () => {
         <div className="flex flex-col gap-4">
           <div className="flex flex-row gap-4 items-center">
             <Link to="/dashboard" className="flex items-center">
-              <img src={logo} alt="logo" className="rounded-xl object-cover h-10 w-10" />
+              <img
+                src={logo}
+                alt="logo"
+                className="rounded-xl object-cover h-10 w-10"
+              />
             </Link>
             <h2 className="font-bold text-2xl text-[#0b7b2a]">Cooklio</h2>
           </div>
@@ -181,7 +199,7 @@ const Home = () => {
             Cooking is at once child's play and adult joy.
           </p>
         </div>
-        <img className="h-70 w-2xl -m-15 pr-15" src={download} alt="app" />
+        <img className="h-70 w-2xl -m-15 pr-15 blur-xs" src={download} alt="app" />
       </div>
 
       {/* ── Cuisine section ── */}
